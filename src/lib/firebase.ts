@@ -18,7 +18,13 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // Analytics — only in browser
 export let analytics: Analytics | null = null;
 if (typeof window !== "undefined") {
-  analytics = getAnalytics(app);
+  import("firebase/analytics").then(({ isSupported, getAnalytics }) => {
+    isSupported().then((supported) => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      }
+    });
+  });
 }
 
 // Messaging — only in browser
