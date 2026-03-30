@@ -6,6 +6,7 @@ import { User } from "@/types";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";
 
 export default function Navbar() {
@@ -116,7 +117,7 @@ export default function Navbar() {
               {/* Avatar */}
               <Link href="/profile" className="flex items-center gap-2 p-1 border-2 border-border hover:border-green-DEFAULT transition-colors">
                 {user.avatar_url ? (
-                  <img src={user.avatar_url} alt={user.username} className="w-8 h-8 object-cover" />
+                  <Image src={user.avatar_url} alt={user.username || "Avatar"} width={32} height={32} className="w-8 h-8 object-cover" />
                 ) : (
                   <div className="w-8 h-8 bg-surface2 flex items-center justify-center">
                     <span className="text-green-DEFAULT text-sm">

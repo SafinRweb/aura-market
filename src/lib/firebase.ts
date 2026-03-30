@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
-import { getAnalytics, Analytics } from "firebase/analytics";
+import type { Analytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

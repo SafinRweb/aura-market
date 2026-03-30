@@ -9,6 +9,7 @@ import MatchCard from "@/components/match/MatchCard";
 import { formatAura, rankBadge } from "@/lib/utils";
 import { Zap, Trophy, Lock } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";
 
 export default function LandingPage() {
@@ -207,7 +208,7 @@ export default function LandingPage() {
                       {/* Avatar */}
                       <div className="w-8 h-8 bg-surface2 border-2 border-border flex items-center justify-center flex-shrink-0">
                         {entry.avatar_url ? (
-                          <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                          <Image src={entry.avatar_url} alt="Avatar" width={32} height={32} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-green-DEFAULT text-xs">
                             {entry.username?.slice(0, 2).toUpperCase()}

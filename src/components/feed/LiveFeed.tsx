@@ -1,6 +1,7 @@
 "use client";
 import { LiveFeedItem } from "@/types";
 import { timeAgo } from "@/lib/utils";
+import Image from "next/image";
 import { AuraAmount } from "@/components/ui/AuraCoin";
 
 export default function LiveFeed({ items }: { items: LiveFeedItem[] }) {
@@ -24,7 +25,7 @@ export default function LiveFeed({ items }: { items: LiveFeedItem[] }) {
             {/* Avatar */}
             <div className="w-6 h-6 bg-surface2 border-2 border-border flex items-center justify-center flex-shrink-0">
               {item.avatar_url ? (
-                <img src={item.avatar_url} alt="" className="w-full h-full object-cover" />
+                <Image src={item.avatar_url} alt="Avatar" width={24} height={24} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-green-DEFAULT" style={{fontSize:"6px"}}>
                   {item.username?.slice(0,2).toUpperCase()}
