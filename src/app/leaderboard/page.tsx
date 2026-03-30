@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { LeaderboardEntry } from "@/types";
 import Navbar from "@/components/layout/Navbar";
 import { formatAura, winRate, rankBadge } from "@/lib/utils";
-import { Crown, Zap, Target, TrendingUp } from "lucide-react";
+import { Crown, Zap } from "lucide-react";
 
 export default function LeaderboardPage() {
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
