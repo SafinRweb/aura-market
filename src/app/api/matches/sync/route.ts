@@ -75,6 +75,7 @@ const COMPETITION_IDS = [2000];
 
 export async function GET() {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let allMatches: any[] = [];
         let competitionName = "FIFA World Cup 2026";
         let foundData = false;
