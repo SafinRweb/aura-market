@@ -44,7 +44,11 @@ export default function MatchCard({ match }: { match: Match }) {
       {/* Teams */}
       <div className="flex items-center justify-between my-4">
         <div className="flex flex-col items-center gap-2 flex-1">
-          <span className="text-3xl">{match.home_flag}</span>
+          {match.home_flag?.startsWith('http') ? (
+            <img src={match.home_flag} alt={match.home_team} className="w-10 h-7 object-cover rounded-[2px]" />
+          ) : (
+            <span className="text-3xl">{match.home_flag}</span>
+          )}
           <span className="text-white text-xs text-center leading-relaxed">
             {match.home_team.toUpperCase()}
           </span>
@@ -64,7 +68,11 @@ export default function MatchCard({ match }: { match: Match }) {
         </div>
 
         <div className="flex flex-col items-center gap-2 flex-1">
-          <span className="text-3xl">{match.away_flag}</span>
+          {match.away_flag?.startsWith('http') ? (
+            <img src={match.away_flag} alt={match.away_team} className="w-10 h-7 object-cover rounded-[2px]" />
+          ) : (
+            <span className="text-3xl">{match.away_flag}</span>
+          )}
           <span className="text-white text-xs text-center leading-relaxed">
             {match.away_team.toUpperCase()}
           </span>
