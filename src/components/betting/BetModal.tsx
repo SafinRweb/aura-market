@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { Match, Pool } from "@/types";
 import { validateStake, formatAura, calcPayout, marketLabel } from "@/lib/utils";
 import { analytics } from "@/lib/analytics";
-import { X, AlertTriangle } from "lucide-react";
+import { X, AlertTriangle, ArrowRight } from "lucide-react";
 import { MarketType } from "@/types";
 
 interface Props {
@@ -255,13 +255,13 @@ export default function BetModal({
           <button
             onClick={handleConfirm}
             disabled={loading || !stake || parseInt(stake) < 5}
-            className="btn-pixel btn-green w-full text-sm py-4 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-pixel btn-green w-full text-sm py-4 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? "PLACING BET..." : `LOCK IN ${stake ? formatAura(parseInt(stake)) : "🤫"} →`}
+            {loading ? "PLACING PREDICTION..." : <span className="flex items-center gap-2">LOCK IN {stake ? formatAura(parseInt(stake)) : "🤫"} <ArrowRight size={14} className="-mt-[2px]" /></span>}
           </button>
 
           <p className="text-faint text-xs text-center">
-            BETS ARE FINAL. NO CANCELLATIONS.
+            PREDICTIONS ARE FINAL. NO CANCELLATIONS.
           </p>
         </div>
       </div>

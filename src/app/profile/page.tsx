@@ -7,9 +7,10 @@ import { formatAura, winRate, timeAgo, marketLabel } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import {
     TrendingUp, TrendingDown, Target, Zap,
-    Trophy, Flame, Star, Crown, Upload
+    Trophy, Flame, Star, Crown, Upload, LogOut
 } from "lucide-react";
 import { MarketType } from "@/types";
+import { AuraAmount } from "@/components/ui/AuraCoin";
 
 interface BetWithMatch extends Bet {
     match: Match;
@@ -52,76 +53,32 @@ export default function ProfilePage() {
 
         await supabase.storage.from("avatars").upload(path, file, { upsert: true });
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-
         await supabase.from("users").update({ avatar_url: data.publicUrl }).eq("id", user.id);
         setUser(prev => prev ? { ...prev, avatar_url: data.publicUrl } : prev);
         setUploading(false);
     }
 
+    async function handleLogout() {
+        await supabase.auth.signOut();
+        router.push("/");
+    }
+
     const filteredBets = bets.filter(b => activeTab === "all" ? true : b.status === activeTab);
 
     const stats = [
-        {
-            label: "AURA BALANCE",
-            value: formatAura(user?.aura_balance || 0),
-            icon: <Star size={14} />,
-            color: "text-green-DEFAULT",
-            bg: "bg-green-dim border-green-DEFAULT",
-        },
-        {
-            label: "TOTAL GAINED",
-            value: formatAura(user?.total_gained || 0),
-            icon: <TrendingUp size={14} />,
-            color: "text-green-DEFAULT",
-            bg: "bg-green-dim border-green-DEFAULT",
-        },
-        {
-            label: "TOTAL LOST",
-            value: formatAura(user?.total_lost || 0),
-            icon: <TrendingDown size={14} />,
-            color: "text-pink-DEFAULT",
-            bg: "bg-pink-dim border-pink-DEFAULT",
-        },
-        {
-            label: "WIN / LOSS RATIO",
-            value: winRate(user?.win_count || 0, user?.total_bets || 0),
-            icon: <Target size={14} />,
-            color: "text-yellow-DEFAULT",
-            bg: "bg-yellow-dim border-yellow-DEFAULT",
-        },
-        {
-            label: "LOGIN STREAK",
-            value: `🔥 ${user?.streak || 0} DAYS`,
-            icon: <Flame size={14} />,
-            color: "text-pink-DEFAULT",
-            bg: "bg-pink-dim border-pink-DEFAULT",
-        },
-        {
-            label: "TOTAL BETS",
-            value: String(user?.total_bets || 0),
-            icon: <Zap size={14} />,
-            color: "text-blue-DEFAULT",
-            bg: "bg-blue-dim border-blue-DEFAULT",
-        },
-        {
-            label: "BIGGEST WIN",
-            value: formatAura(user?.biggest_win || 0),
-            icon: <Trophy size={14} />,
-            color: "text-yellow-DEFAULT",
-            bg: "bg-yellow-dim border-yellow-DEFAULT",
-        },
-        {
-            label: "LEADERBOARD RANK",
-            value: user?.leaderboard_rank ? `#${user.leaderboard_rank}` : "UNRANKED",
-            icon: <Crown size={14} />,
-            color: "text-yellow-DEFAULT",
-            bg: "bg-yellow-dim border-yellow-DEFAULT",
-        },
+        { label: "BALANCE", value: formatAura(user?.aura_balance || 0), icon: <Star size={12} />, color: "text-green-DEFAULT", bg: "bg-green-dim border-green-DEFAULT" },
+        { label: "GAINED", value: formatAura(user?.total_gained || 0), icon: <TrendingUp size={12} />, color: "text-green-DEFAULT", bg: "bg-green-dim border-green-DEFAULT" },
+        { label: "LOST", value: formatAura(user?.total_lost || 0), icon: <TrendingDown size={12} />, color: "text-pink-DEFAULT", bg: "bg-pink-dim border-pink-DEFAULT" },
+        { label: "WIN RATE", value: winRate(user?.win_count || 0, user?.total_bets || 0), icon: <Target size={12} />, color: "text-yellow-DEFAULT", bg: "bg-yellow-dim border-yellow-DEFAULT" },
+        { label: "STREAK", value: `🔥 ${user?.streak || 0}D`, icon: <Flame size={12} />, color: "text-pink-DEFAULT", bg: "bg-pink-dim border-pink-DEFAULT" },
+        { label: "TOTAL PREDICTIONS", value: String(user?.total_bets || 0), icon: <Zap size={12} />, color: "text-blue-DEFAULT", bg: "bg-blue-dim border-blue-DEFAULT" },
+        { label: "BEST WIN", value: formatAura(user?.biggest_win || 0), icon: <Trophy size={12} />, color: "text-yellow-DEFAULT", bg: "bg-yellow-dim border-yellow-DEFAULT" },
+        { label: "RANK", value: user?.leaderboard_rank ? `#${user.leaderboard_rank}` : "—", icon: <Crown size={12} />, color: "text-yellow-DEFAULT", bg: "bg-yellow-dim border-yellow-DEFAULT" },
     ];
 
     if (loading) return (
         <AppLayout>
-            <div className="flex items-center justify-center min-h-screen">
+            <div className="flex items-center justify-center min-h-[60vh]">
                 <p className="neon-green text-sm animate-pulse">LOADING PROFILE...</p>
             </div>
         </AppLayout>
@@ -129,120 +86,129 @@ export default function ProfilePage() {
 
     return (
         <AppLayout>
-            <div className="max-w-5xl mx-auto px-4 py-8">
+            <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4">
 
-                {/* Profile header */}
-                <div className="card p-6 mb-8 animate-slide-up">
-                    <div className="flex items-center gap-6">
+                {/* ── Profile Card ── */}
+                <div className="card p-4 sm:p-6 mb-4 animate-slide-up">
+                    {/* Top row: avatar + info + logout */}
+                    <div className="flex items-start gap-4">
 
-                        {/* Avatar */}
-                        <div className="relative group">
-                            <div className="w-20 h-20 border-2 border-green-DEFAULT overflow-hidden"
-                                style={{ boxShadow: "0 0 20px rgba(0,255,135,0.3)" }}>
+                        {/* Avatar with upload overlay */}
+                        <div className="relative group shrink-0">
+                            <div
+                                className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-green-DEFAULT overflow-hidden"
+                                style={{ boxShadow: "0 0 20px rgba(0,255,135,0.25)" }}
+                            >
                                 {user?.avatar_url ? (
                                     <img src={user.avatar_url} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                     <div className="w-full h-full bg-surface2 flex items-center justify-center">
-                                        <span className="neon-green text-2xl">
+                                        <span className="neon-green text-xl sm:text-2xl">
                                             {user?.username?.slice(0, 2).toUpperCase()}
                                         </span>
                                     </div>
                                 )}
                             </div>
-                            {/* Upload overlay */}
-                            <label className="absolute inset-0 flex items-center justify-center bg-bg opacity-0 group-hover:opacity-90 cursor-pointer transition-opacity border-2 border-green-DEFAULT">
+                            {/* Upload trigger */}
+                            <label className="absolute inset-0 flex items-center justify-center bg-bg opacity-0 group-hover:opacity-90 cursor-pointer transition-opacity border-2 border-green-DEFAULT touch-manipulation">
                                 <div className="text-center">
-                                    <Upload size={14} className="text-green-DEFAULT mx-auto mb-1" />
-                                    <p className="text-green-DEFAULT text-xs">
+                                    <Upload size={12} className="text-green-DEFAULT mx-auto mb-1" />
+                                    <p className="text-green-DEFAULT" style={{ fontSize: "7px" }}>
                                         {uploading ? "..." : "CHANGE"}
                                     </p>
                                 </div>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleAvatarUpload}
-                                    className="hidden"
-                                />
+                                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                             </label>
                         </div>
 
-                        {/* User info */}
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                                <h1 className="neon-green text-xl">
-                                    {user?.username?.toUpperCase()}
-                                </h1>
-                                {user?.leaderboard_rank === 1 && (
-                                    <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim">
-                                        AURA LORD
-                                    </span>
-                                )}
-                                {user?.leaderboard_rank === 2 && (
-                                    <span className="badge text-muted border-muted bg-surface">
-                                        MOGGER
-                                    </span>
-                                )}
-                                {user?.leaderboard_rank === 3 && (
-                                    <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim">
-                                        PATLA AURA
-                                    </span>
-                                )}
+                        {/* Username + meta */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="min-w-0">
+                                    <h1 className="neon-green text-base sm:text-xl truncate">
+                                        {user?.username?.toUpperCase()}
+                                    </h1>
+                                    {user?.leaderboard_rank === 1 && (
+                                        <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim mt-1 inline-block">AURA LORD</span>
+                                    )}
+                                    {user?.leaderboard_rank === 2 && (
+                                        <span className="badge text-muted border-muted bg-surface mt-1 inline-block">MOGGER</span>
+                                    )}
+                                    {user?.leaderboard_rank === 3 && (
+                                        <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim mt-1 inline-block">PATLA AURA</span>
+                                    )}
+                                </div>
+
+                                {/* Logout button — always visible */}
+                                <button
+                                    onClick={handleLogout}
+                                    className="btn-pixel btn-ghost flex items-center gap-1.5 px-2 py-2 text-xs text-pink-DEFAULT border-pink-DEFAULT shrink-0"
+                                    style={{ boxShadow: "none" }}
+                                >
+                                    <LogOut size={11} />
+                                    <span className="hidden sm:inline">LOGOUT</span>
+                                </button>
                             </div>
-                            <p className="text-faint text-xs mb-3">
-                                MEMBER SINCE {new Date(user?.created_at || "").toLocaleDateString("en-US", {
-                                    month: "long", year: "numeric"
+
+                            <p className="text-faint text-xs mb-2">
+                                SINCE {new Date(user?.created_at || "").toLocaleDateString("en-US", {
+                                    month: "short", year: "numeric"
                                 }).toUpperCase()}
                             </p>
-                            <div className="flex items-center gap-4">
-                                <span className="text-white text-sm">
+
+                            {/* Win / loss row */}
+                            <div className="flex items-center gap-3 flex-wrap">
+                                <span className="text-white text-xs">
                                     {user?.win_count || 0}
-                                    <span className="text-faint text-xs ml-1">WINS</span>
+                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>W</span>
                                 </span>
-                                <span className="text-faint">·</span>
-                                <span className="text-white text-sm">
+                                <span className="text-faint text-xs">·</span>
+                                <span className="text-white text-xs">
                                     {user?.loss_count || 0}
-                                    <span className="text-faint text-xs ml-1">LOSSES</span>
+                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>L</span>
                                 </span>
-                                <span className="text-faint">·</span>
-                                <span className="text-green-DEFAULT text-sm">
+                                <span className="text-faint text-xs">·</span>
+                                <span className="text-green-DEFAULT text-xs">
                                     {winRate(user?.win_count || 0, user?.total_bets || 0)}
-                                    <span className="text-faint text-xs ml-1">WIN RATE</span>
+                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>WR</span>
                                 </span>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Balance highlight */}
-                        <div className="hidden md:block text-right">
-                            <p className="text-faint text-xs mb-1">CURRENT BALANCE</p>
-                            <p className="neon-green text-2xl">{formatAura(user?.aura_balance || 0)}</p>
-                        </div>
+                    {/* Balance highlight strip */}
+                    <div className="mt-4 pt-4 border-t-2 border-border flex items-center justify-between">
+                        <p className="text-faint text-xs">CURRENT BALANCE</p>
+                        <p className="neon-green text-xl">{formatAura(user?.aura_balance || 0)}</p>
                     </div>
                 </div>
 
-                {/* Stats grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8 stagger">
+                {/* ── Stats grid ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 stagger">
                     {stats.map(stat => (
-                        <div key={stat.label} className={`card p-4 border-2 ${stat.bg}`}>
-                            <div className={`flex items-center gap-2 mb-2 ${stat.color}`}>
+                        <div key={stat.label} className={`card p-3 border-2 ${stat.bg}`}>
+                            <div className={`flex items-center gap-1.5 mb-2 ${stat.color}`}>
                                 {stat.icon}
-                                <p className="text-faint text-xs">{stat.label}</p>
+                                <p className="text-faint" style={{ fontSize: "7px" }}>{stat.label}</p>
                             </div>
-                            <p className={`${stat.color} text-sm`}>{stat.value}</p>
+                            <p className={`${stat.color} text-xs leading-normal`}>{stat.value}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* Bet history */}
+                {/* ── Bet history ── */}
                 <div className="card overflow-hidden">
-                    <div className="flex items-center justify-between p-4 border-b-2 border-border bg-surface2">
-                        <h2 className="text-white text-sm">BET HISTORY</h2>
-                        <div className="flex gap-1">
+                    {/* Header + filter tabs */}
+                    <div className="p-3 sm:p-4 border-b-2 border-border bg-surface2">
+                        <h2 className="text-white text-xs mb-3">PREDICTION HISTORY</h2>
+                        {/* Horizontally scrollable tabs */}
+                        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-0.5 px-0.5">
                             {(["all", "pending", "won", "lost"] as const).map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-3 py-1 text-xs border-2 transition-all
-                    ${activeTab === tab
+                                    className={`px-3 py-2 text-xs border-2 transition-all whitespace-nowrap shrink-0 touch-manipulation
+                                        ${activeTab === tab
                                             ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
                                             : "border-border text-faint hover:border-border2"
                                         }`}
@@ -254,57 +220,55 @@ export default function ProfilePage() {
                     </div>
 
                     {filteredBets.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <p className="text-faint text-sm">NO BETS YET</p>
-                            <p className="text-faint text-xs mt-2">START BETTING TO SEE YOUR HISTORY</p>
+                        <div className="p-10 text-center">
+                            <p className="text-faint text-xs">NO PREDICTIONS YET</p>
+                            <p className="text-faint mt-2" style={{ fontSize: "8px" }}>START PREDICTING TO SEE YOUR HISTORY</p>
                         </div>
                     ) : (
-                        <div className="divide-y-2 divide-border">
+                        <div className="divide-y divide-border/50">
                             {filteredBets.map(bet => (
-                                <div key={bet.id}
-                                    className="p-4 hover:bg-surface2 transition-colors animate-fade-in">
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="flex-1 min-w-0">
-                                            {/* Match */}
-                                            <p className="text-faint text-xs mb-1">
-                                                {bet.match?.home_team} VS {bet.match?.away_team}
-                                            </p>
-                                            {/* Market + Outcome */}
-                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                <span className="badge text-blue-DEFAULT border-blue-DEFAULT bg-blue-dim">
-                                                    {marketLabel(bet.market_type as MarketType)}
-                                                </span>
-                                                <span className="text-white text-sm">
-                                                    {bet.outcome.toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <p className="text-faint text-xs">{timeAgo(bet.created_at)}</p>
-                                        </div>
+                                <div
+                                    key={bet.id}
+                                    className="p-3 sm:p-4 hover:bg-surface2 transition-colors"
+                                >
+                                    {/* Match teams */}
+                                    <p className="text-faint text-xs mb-2 truncate">
+                                        {bet.match?.home_team} VS {bet.match?.away_team}
+                                    </p>
 
-                                        <div className="text-right flex-shrink-0">
-                                            {/* Status */}
-                                            <span className={`badge mb-2 block ${bet.status === "won"
+                                    {/* Market + outcome + status row */}
+                                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                            <span className="badge text-blue-DEFAULT border-blue-DEFAULT bg-blue-dim shrink-0">
+                                                {marketLabel(bet.market_type as MarketType)}
+                                            </span>
+                                            <span className="text-white text-xs truncate">
+                                                {bet.outcome.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <span className={`badge shrink-0 ${
+                                            bet.status === "won"
                                                 ? "text-green-DEFAULT border-green-DEFAULT bg-green-dim"
                                                 : bet.status === "lost"
                                                     ? "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim"
                                                     : bet.status === "void"
                                                         ? "text-faint border-border bg-surface"
                                                         : "text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim"
-                                                }`}>
-                                                {bet.status.toUpperCase()}
-                                            </span>
-                                            {/* Stake */}
-                                            <p className="text-white text-sm">{formatAura(bet.stake)}</p>
-                                            {/* Payout */}
+                                        }`}>
+                                            {bet.status.toUpperCase()}
+                                        </span>
+                                    </div>
+
+                                    {/* Stake + payout + time row */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-faint text-xs">{timeAgo(bet.created_at)}</p>
+                                        <div className="text-right">
+                                            <span className="text-white text-xs">{formatAura(bet.stake)}</span>
                                             {bet.status === "won" && bet.actual_payout && (
-                                                <p className="text-green-DEFAULT text-xs mt-1">
-                                                    +{formatAura(bet.actual_payout)}
-                                                </p>
+                                                <span className="text-green-DEFAULT ml-2 text-xs">+{formatAura(bet.actual_payout)}</span>
                                             )}
                                             {bet.status === "pending" && (
-                                                <p className="text-faint text-xs mt-1">
-                                                    EST: {formatAura(bet.potential_payout)}
-                                                </p>
+                                                <span className="text-faint ml-2" style={{ fontSize: "8px" }}>EST +{formatAura(bet.potential_payout)}</span>
                                             )}
                                         </div>
                                     </div>
@@ -313,6 +277,7 @@ export default function ProfilePage() {
                         </div>
                     )}
                 </div>
+
             </div>
         </AppLayout>
     );

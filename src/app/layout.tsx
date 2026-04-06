@@ -3,6 +3,7 @@ import { Press_Start_2P } from "next/font/google";
 import Script from "next/script";
 import "./global.css";
 import { GA_ID } from "@/lib/analytics";
+import Navbar from "@/components/layout/Navbar";
 
 const pixelFont = Press_Start_2P({
   weight: "400",
@@ -48,6 +49,7 @@ export default function RootLayout({
         )}
       </head>
       <body className={`${pixelFont.variable} font-pixel`}>
+        <Navbar />
         {children}
       </body>
     </html>

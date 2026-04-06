@@ -11,6 +11,7 @@ import CountdownTimer from "@/components/match/CountdownTimer";
 import { formatKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Calendar } from "lucide-react";
+import Flag from "@/components/ui/Flag";
 
 const MARKETS: { type: MarketType; options: { label: string; value: string }[] }[] = [
   {
@@ -132,7 +133,7 @@ export default function MatchPage() {
 
   async function handleBetSuccess(stake: number) {
     setModalState(null);
-    setBetSuccess(`BET PLACED! ${stake} 🤫 LOCKED IN`);
+    setBetSuccess(`PREDICTION PLACED! ${stake} 🤫 LOCKED IN`);
     setTimeout(() => setBetSuccess(null), 4000);
 
     if (!user) return;
@@ -221,7 +222,7 @@ export default function MatchPage() {
           {/* Teams */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex flex-col items-center gap-3 flex-1">
-              <span className="text-5xl animate-float">{match.home_flag}</span>
+              <Flag emoji={match.home_flag} size={72} alt={match.home_team} />
               <p className="text-white text-sm text-center leading-loose">
                 {match.home_team.toUpperCase()}
               </p>
@@ -251,9 +252,7 @@ export default function MatchPage() {
             </div>
 
             <div className="flex flex-col items-center gap-3 flex-1">
-              <span className="text-5xl animate-float" style={{ animationDelay: "0.5s" }}>
-                {match.away_flag}
-              </span>
+              <Flag emoji={match.away_flag} size={72} alt={match.away_team} />
               <p className="text-white text-sm text-center leading-loose">
                 {match.away_team.toUpperCase()}
               </p>
@@ -284,7 +283,7 @@ export default function MatchPage() {
               <div className="bg-pink-dim border-2 border-pink-DEFAULT p-4 flex items-center gap-3">
                 <span className="text-pink-DEFAULT text-xl">🔒</span>
                 <div>
-                  <p className="text-pink-DEFAULT text-sm">BETTING LOCKED</p>
+                  <p className="text-pink-DEFAULT text-sm">PREDICTIONS LOCKED</p>
                   <p className="text-faint text-xs mt-1">
                     {match.status === "live"
                       ? "MATCH IS IN PROGRESS"

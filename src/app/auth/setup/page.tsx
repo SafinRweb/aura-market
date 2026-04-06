@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
+import { ArrowRight } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
 import AuraCoin from "@/components/ui/AuraCoin";
@@ -79,7 +80,7 @@ export default function SetupPage() {
         id: user.id,
         username: username.toLowerCase(),
         avatar_url,
-        aura_balance: 100,
+        aura_balance: 0,
       });
     if (updateError) {
       setError(updateError.message);
@@ -102,11 +103,6 @@ export default function SetupPage() {
           <p className="text-faint text-xs">ONE TIME ONLY. CHOOSE WISELY.</p>
         </div>
 
-        {/* Starting balance banner */}
-        <div className="bg-green-dim border-2 border-green-DEFAULT p-4 mb-6 text-center"
-          style={{ boxShadow: "0 0 20px rgba(0,255,135,0.2)" }}>
-          <p className="text-green-DEFAULT text-xs flex items-center justify-center gap-1"><AuraCoin size={20} /> 100 AURA LOADED INTO YOUR ACCOUNT</p>
-        </div>
 
         <div className="card p-8">
           {error && (
@@ -175,7 +171,7 @@ export default function SetupPage() {
               disabled={loading || usernameStatus !== "available"}
               className="btn-pixel btn-green w-full disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {loading ? "SETTING UP..." : "ENTER THE MARKET →"}
+              {loading ? "SETTING UP..." : <span className="flex items-center justify-center gap-2">ENTER THE MARKET <ArrowRight size={14} className="-mt-[2px]" /></span>}
             </button>
           </form>
         </div>

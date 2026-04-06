@@ -2,314 +2,290 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LeaderboardEntry } from "@/types";
-import Navbar from "@/components/layout/Navbar";
 import { formatAura, winRate, rankBadge } from "@/lib/utils";
-import { Crown, Zap } from "lucide-react";
+import { Crown, Zap, Trophy } from "lucide-react";
+import AuraCoin, { AuraAmount } from "@/components/ui/AuraCoin";
+
+const EMOJI_STYLE: React.CSSProperties = {
+  lineHeight: 1,
+  display: "inline-block",
+};
+
+const MEDAL = ["👑", "⚡", "🔥"] as const;
+const MEDAL_COLORS = [
+  { border: "#ffbe0b", glow: "rgba(255,190,11,0.4)", text: "text-yellow-DEFAULT", bg: "bg-yellow-dim" },
+  { border: "#aaaacc", glow: "rgba(170,170,204,0.3)", text: "text-muted", bg: "bg-surface2" },
+  { border: "#ff006e", glow: "rgba(255,0,110,0.25)", text: "text-pink-DEFAULT", bg: "bg-pink-dim" },
+];
 
 export default function LeaderboardPage() {
-    const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-    const [myRank, setMyRank] = useState<LeaderboardEntry | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState<"all" | "top10">("all");
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [myRank, setMyRank] = useState<LeaderboardEntry | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showTop, setShowTop] = useState(false);
 
-    useEffect(() => {
-        async function load() {
-            const { data: { user } } = await supabase.auth.getUser();
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data } = await supabase.from("leaderboard").select("*").limit(100);
+      setEntries(data || []);
+      if (user) {
+        const myEntry = data?.find(e => e.user_id === user.id);
+        if (myEntry) setMyRank(myEntry);
+      }
+      setLoading(false);
+    }
+    load();
 
-            const { data } = await supabase
-                .from("leaderboard")
-                .select("*")
-                .limit(100);
+    const channel = supabase
+      .channel("leaderboard")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "users" }, async () => {
+        const { data } = await supabase.from("leaderboard").select("*").limit(100);
+        setEntries(data || []);
+      })
+      .subscribe();
 
-            setEntries(data || []);
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
-            if (user) {
-                const myEntry = data?.find(e => e.user_id === user.id);
-                if (myEntry) setMyRank(myEntry);
-            }
+  const displayed = showTop ? entries.slice(0, 10) : entries;
+  const podium = entries.slice(0, 3);
 
-            setLoading(false);
-        }
-        load();
+  if (loading) return (
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <p className="neon-green text-sm animate-pulse">LOADING RANKS...</p>
+    </div>
+  );
 
-        // Realtime leaderboard updates
-        const channel = supabase
-            .channel("leaderboard")
-            .on("postgres_changes", {
-                event: "UPDATE",
-                schema: "public",
-                table: "users",
-            }, async () => {
-                const { data } = await supabase
-                    .from("leaderboard")
-                    .select("*")
-                    .limit(100);
-                setEntries(data || []);
-            })
-            .subscribe();
+  return (
+    <div className="min-h-screen bg-bg crt flex flex-col">
+      <main className="pt-20 pb-24 md:pb-6 flex-1 max-w-3xl mx-auto w-full px-3 sm:px-4">
 
-        return () => { supabase.removeChannel(channel); };
-    }, []);
-
-    const displayed = tab === "top10" ? entries.slice(0, 10) : entries;
-
-    const podium = entries.slice(0, 3);
-
-    if (loading) return (
-        <div className="min-h-screen bg-bg flex items-center justify-center">
-            <p className="neon-green text-sm animate-pulse">LOADING RANKS...</p>
+        {/* ── Header ── */}
+        <div className="text-center mb-8 mt-2 animate-slide-up">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Crown size={16} className="text-yellow-DEFAULT" style={{ filter: "drop-shadow(0 0 6px rgba(255,190,11,0.8))" }} />
+            <h1 className="neon-green text-lg sm:text-2xl">HALL OF FAME</h1>
+            <Crown size={16} className="text-yellow-DEFAULT" style={{ filter: "drop-shadow(0 0 6px rgba(255,190,11,0.8))" }} />
+          </div>
+          <p className="text-faint text-xs">GLOBAL RANKINGS · TOP 100</p>
         </div>
-    );
 
-    return (
-        <div className="min-h-screen bg-bg crt">
-            <Navbar />
-            <main className="pt-16 max-w-4xl mx-auto px-4 py-8">
+        {/* ── Podium ── */}
+        {podium.length >= 3 && (
+          <div className="mb-8 animate-slide-up">
+            <div className="relative">
+              <div className="absolute inset-0 pointer-events-none" style={{
+                background: "radial-gradient(ellipse at 50% 100%, rgba(255,190,11,0.08) 0%, transparent 70%)"
+              }} />
 
-                {/* Header */}
-                <div className="text-center my-10 animate-slide-up">
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <Crown size={20} className="text-yellow-DEFAULT" />
-                        <h1 className="neon-green text-2xl">HALL OF FAME</h1>
-                        <Crown size={20} className="text-yellow-DEFAULT" />
+              <div className="flex items-end justify-center gap-3 sm:gap-6 relative z-10 px-2">
+                {[1, 0, 2].map(pos => {
+                  const player = podium[pos];
+                  const mc = MEDAL_COLORS[pos];
+                  const heights = ["h-28 sm:h-32", "h-20 sm:h-24", "h-14 sm:h-18"];
+                  return (
+                    <div key={pos} className="flex flex-col items-center gap-1.5 flex-1 max-w-[110px]">
+                      {pos === 0 && (
+                        <span className="emoji text-3xl animate-float mb-1" style={EMOJI_STYLE}><AuraCoin size={60} /></span>
+                      )}
+
+                      {/* Avatar */}
+                      <div
+                        className="w-12 h-12 sm:w-16 sm:h-16 border-2 overflow-hidden shadow-lg transition-transform hover:-translate-y-1"
+                        style={{ borderColor: mc.border, boxShadow: `0 0 20px ${mc.glow}` }}
+                      >
+                        {player?.avatar_url ? (
+                          <img src={player.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className={`w-full h-full ${mc.bg} flex items-center justify-center`}>
+                            <span className={`${mc.text} text-xs sm:text-base`}>
+                              {player?.username?.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Username */}
+                      <p
+                        className={`${mc.text} text-[9px] sm:text-[10px] text-center truncate w-full px-1`}
+                        style={{ textShadow: `0 0 5px ${mc.glow}` }}
+                      >
+                        {player?.username?.toUpperCase()}
+                      </p>
+
+                      {/* Balance — shown on all screen sizes */}
+                      <AuraAmount
+                        amount={player?.aura_balance || 0}
+                        size={12}
+                        className={`${mc.text} text-[8px] sm:text-[10px]`}
+                      />
+
+                      {/* Podium block */}
+                      <div
+                        className={`w-full ${heights[pos]} border-2 flex flex-col items-center justify-center gap-1`}
+                        style={{ borderColor: mc.border, background: "rgba(26,26,46,0.6)", boxShadow: `inset 0 0 15px ${mc.glow}` }}
+                      >
+                        <span className="emoji text-base sm:text-xl" style={EMOJI_STYLE}>{MEDAL[pos]}</span>
+                        <span className={`${mc.text} text-xs font-bold`}>#{pos + 1}</span>
+                      </div>
                     </div>
-                    <p className="text-faint text-xs">
-                        GLOBAL RANKINGS · {entries.length} PLAYERS
-                    </p>
-                </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Top 3 Podium */}
-                {podium.length >= 3 && (
-                    <div className="mb-10 animate-slide-up">
-                        <div className="flex items-end justify-center gap-4">
-
-                            {/* 2nd place */}
-                            <div className="flex flex-col items-center gap-3 flex-1 max-w-48">
-                                <div className="w-16 h-16 border-2 border-muted overflow-hidden"
-                                    style={{ boxShadow: "0 0 15px rgba(170,170,204,0.3)" }}>
-                                    {podium[1]?.avatar_url ? (
-                                        <img src={podium[1].avatar_url} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-surface2 flex items-center justify-center">
-                                            <span className="text-muted text-lg">
-                                                {podium[1]?.username?.slice(0, 2).toUpperCase()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="text-muted text-xs text-center truncate w-full">
-                                    {podium[1]?.username?.toUpperCase()}
-                                </p>
-                                <p className="text-muted text-xs">{formatAura(podium[1]?.aura_balance)}</p>
-                                <div className="w-full bg-surface border-2 border-muted p-3 text-center"
-                                    style={{ height: "80px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <div>
-                                        <p className="text-3xl mb-1">⚡</p>
-                                        <p className="text-muted text-xs">#2</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 1st place */}
-                            <div className="flex flex-col items-center gap-3 flex-1 max-w-48">
-                                <div className="text-2xl animate-float">👑</div>
-                                <div className="w-20 h-20 border-2 border-yellow-DEFAULT overflow-hidden"
-                                    style={{ boxShadow: "0 0 25px rgba(255,190,11,0.4)" }}>
-                                    {podium[0]?.avatar_url ? (
-                                        <img src={podium[0].avatar_url} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-surface2 flex items-center justify-center">
-                                            <span className="text-yellow-DEFAULT text-xl">
-                                                {podium[0]?.username?.slice(0, 2).toUpperCase()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="text-yellow-DEFAULT text-sm text-center truncate w-full">
-                                    {podium[0]?.username?.toUpperCase()}
-                                </p>
-                                <p className="text-yellow-DEFAULT text-sm">{formatAura(podium[0]?.aura_balance)}</p>
-                                <div className="w-full bg-yellow-dim border-2 border-yellow-DEFAULT p-3 text-center"
-                                    style={{
-                                        height: "120px", display: "flex", alignItems: "center", justifyContent: "center",
-                                        boxShadow: "0 0 20px rgba(255,190,11,0.2)"
-                                    }}>
-                                    <div>
-                                        <p className="text-yellow-DEFAULT text-xs mb-1">AURA GOD</p>
-                                        <p className="text-4xl">#1</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 3rd place */}
-                            <div className="flex flex-col items-center gap-3 flex-1 max-w-48">
-                                <div className="w-16 h-16 border-2 border-border2 overflow-hidden"
-                                    style={{ boxShadow: "0 0 15px rgba(255,190,11,0.15)" }}>
-                                    {podium[2]?.avatar_url ? (
-                                        <img src={podium[2].avatar_url} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-surface2 flex items-center justify-center">
-                                            <span className="text-faint text-lg">
-                                                {podium[2]?.username?.slice(0, 2).toUpperCase()}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <p className="text-faint text-xs text-center truncate w-full">
-                                    {podium[2]?.username?.toUpperCase()}
-                                </p>
-                                <p className="text-faint text-xs">{formatAura(podium[2]?.aura_balance)}</p>
-                                <div className="w-full bg-surface border-2 border-border2 p-3 text-center"
-                                    style={{ height: "60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    <div>
-                                        <p className="text-2xl mb-1">🔥</p>
-                                        <p className="text-faint text-xs">#3</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* My rank banner */}
-                {myRank && (
-                    <div className="bg-green-dim border-2 border-green-DEFAULT p-4 mb-6 flex items-center justify-between animate-slide-up"
-                        style={{ boxShadow: "0 0 20px rgba(0,255,135,0.15)" }}>
-                        <div className="flex items-center gap-3">
-                            <span className="neon-green text-sm">YOUR RANK</span>
-                            <span className="text-white text-sm">#{myRank.rank}</span>
-                            {rankBadge(Number(myRank.rank)) && (
-                                <span className="text-yellow-DEFAULT text-xs">
-                                    {rankBadge(Number(myRank.rank))}
-                                </span>
-                            )}
-                        </div>
-                        <span className="text-green-DEFAULT text-sm">
-                            {formatAura(myRank.aura_balance)}
-                        </span>
-                    </div>
-                )}
-
-                {/* Tab toggle */}
-                <div className="flex gap-2 mb-6">
-                    {(["all", "top10"] as const).map(t => (
-                        <button
-                            key={t}
-                            onClick={() => setTab(t)}
-                            className={`px-4 py-2 text-xs border-2 transition-all
-                ${tab === t
-                                    ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                                    : "border-border text-faint hover:border-border2"
-                                }`}
-                        >
-                            {t === "all" ? "ALL PLAYERS" : "TOP 10"}
-                        </button>
-                    ))}
-                    <div className="ml-auto flex items-center gap-2 text-faint text-xs">
-                        <Zap size={11} />
-                        LIVE UPDATES
-                    </div>
-                </div>
-
-                {/* Leaderboard table */}
-                <div className="card overflow-hidden animate-slide-up">
-
-                    {/* Table header */}
-                    <div className="grid grid-cols-12 gap-2 p-3 border-b-2 border-border bg-surface2 text-faint text-xs">
-                        <div className="col-span-1 text-center">RANK</div>
-                        <div className="col-span-5">PLAYER</div>
-                        <div className="col-span-2 text-right">BALANCE</div>
-                        <div className="col-span-2 text-right hidden md:block">WIN RATE</div>
-                        <div className="col-span-2 text-right hidden md:block">BETS</div>
-                    </div>
-
-                    {displayed.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <p className="text-faint text-sm">NO PLAYERS YET</p>
-                            <p className="text-faint text-xs mt-2">BE THE FIRST TO JOIN</p>
-                        </div>
-                    ) : (
-                        displayed.map((entry, i) => {
-                            const isMe = entry.user_id === myRank?.user_id;
-                            const rank = Number(entry.rank);
-
-                            return (
-                                <div
-                                    key={entry.user_id}
-                                    className={`grid grid-cols-12 gap-2 p-3 border-b-2 border-border items-center transition-colors
-                    ${isMe ? "bg-green-dim border-l-4 border-l-green-DEFAULT" : "hover:bg-surface2"}
-                    ${i === 0 ? "bg-yellow-dim hover:bg-yellow-dim" : ""}
-                  `}
-                                >
-                                    {/* Rank */}
-                                    <div className="col-span-1 text-center">
-                                        {rank === 1 ? (
-                                            <span className="text-xl">👑</span>
-                                        ) : rank === 2 ? (
-                                            <span className="text-xl">⚡</span>
-                                        ) : rank === 3 ? (
-                                            <span className="text-xl">🔥</span>
-                                        ) : (
-                                            <span className={`text-sm ${isMe ? "text-green-DEFAULT" : "text-faint"}`}>
-                                                #{rank}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* Player */}
-                                    <div className="col-span-5 flex items-center gap-3">
-                                        <div className="w-8 h-8 border-2 border-border flex-shrink-0 overflow-hidden"
-                                            style={rank <= 3 ? { borderColor: rank === 1 ? "#ffbe0b" : rank === 2 ? "#aaaacc" : "#666688" } : {}}>
-                                            {entry.avatar_url ? (
-                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full bg-surface2 flex items-center justify-center">
-                                                    <span className={`text-xs ${rank === 1 ? "text-yellow-DEFAULT" : "text-faint"}`}>
-                                                        {entry.username?.slice(0, 2).toUpperCase()}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className={`text-sm truncate ${isMe ? "text-green-DEFAULT" : rank === 1 ? "text-yellow-DEFAULT" : "text-white"}`}>
-                                                {entry.username?.toUpperCase()}
-                                                {isMe && <span className="text-faint text-xs ml-2">(YOU)</span>}
-                                            </p>
-                                            {rankBadge(rank) && (
-                                                <p className="text-yellow-DEFAULT text-xs mt-0.5">{rankBadge(rank)}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Balance */}
-                                    <div className="col-span-2 text-right">
-                                        <p className={`text-sm ${rank === 1 ? "text-yellow-DEFAULT" : isMe ? "text-green-DEFAULT" : "text-white"}`}>
-                                            {formatAura(entry.aura_balance)}
-                                        </p>
-                                    </div>
-
-                                    {/* Win rate */}
-                                    <div className="col-span-2 text-right hidden md:block">
-                                        <p className="text-sm text-muted">
-                                            {winRate(entry.win_count, entry.total_bets)}
-                                        </p>
-                                    </div>
-
-                                    {/* Total bets */}
-                                    <div className="col-span-2 text-right hidden md:block">
-                                        <p className="text-sm text-faint">{entry.total_bets}</p>
-                                    </div>
-                                </div>
-                            );
-                        })
+        {/* ── My Rank Banner ── */}
+        {myRank && (
+          <div
+            className="mb-5 p-3 sm:p-4 border-2 border-green-DEFAULT bg-green-dim animate-slide-up"
+            style={{ boxShadow: "0 0 20px rgba(0,255,135,0.15)" }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Trophy size={14} className="text-green-DEFAULT animate-pulse shrink-0" />
+                <div>
+                  <span className="neon-green text-xs block mb-1">YOUR RANKING</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-base">#{myRank.rank}</span>
+                    {rankBadge(Number(myRank.rank)) && (
+                      <span className="text-yellow-DEFAULT px-2 border border-yellow-DEFAULT/30 bg-yellow-DEFAULT/10" style={{ fontSize: "8px" }}>
+                        {rankBadge(Number(myRank.rank))}
+                      </span>
                     )}
+                  </div>
                 </div>
+              </div>
+              <div className="text-right">
+                <span className="text-faint block mb-1" style={{ fontSize: "8px" }}>BALANCE</span>
+                <AuraAmount amount={myRank.aura_balance} size={18} className="text-green-DEFAULT" />
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Footer note */}
-                <p className="text-center text-faint text-xs mt-6">
-                    RANKINGS UPDATE IN REAL TIME · TOP 100 SHOWN
-                </p>
-            </main>
+        {/* ── Filter toggle ── */}
+        <div className="flex bg-surface2 border border-border p-1 mb-4">
+          <button
+            onClick={() => setShowTop(false)}
+            className={`flex-1 py-3 text-xs transition-all text-center touch-manipulation ${!showTop
+              ? "bg-bg text-green-DEFAULT border border-green-DEFAULT shadow-[0_0_10px_rgba(0,255,135,0.2)]"
+              : "text-faint hover:text-white"
+              }`}
+          >
+            ALL PLAYERS
+          </button>
+          <button
+            onClick={() => setShowTop(true)}
+            className={`flex-1 py-3 text-xs transition-all text-center touch-manipulation ${showTop
+              ? "bg-bg text-yellow-DEFAULT border border-yellow-DEFAULT shadow-[0_0_10px_rgba(255,190,11,0.2)]"
+              : "text-faint hover:text-white"
+              }`}
+          >
+            TOP 10
+          </button>
         </div>
-    );
+
+        {/* ── Table ── */}
+        <div className="card overflow-hidden animate-slide-up border-2" style={{ padding: 0 }}>
+          {/* Table header */}
+          <div className="flex items-center px-3 py-2.5 border-b-2 border-border bg-bg/50 text-faint" style={{ fontSize: "8px" }}>
+            <div className="w-8 text-center shrink-0">#</div>
+            <div className="flex-1 min-w-0 pl-2">PLAYER</div>
+            <div className="w-14 text-center shrink-0 hidden sm:block">W/RATE</div>
+            <div className="w-20 sm:w-24 text-right shrink-0">BALANCE</div>
+          </div>
+
+          <div className="divide-y divide-border/50">
+            {displayed.length === 0 ? (
+              <div className="p-12 text-center text-faint text-xs">AWAITING PLAYERS</div>
+            ) : (
+              displayed.map((entry) => {
+                const isMe = entry.user_id === myRank?.user_id;
+                const rank = Number(entry.rank);
+                const mc = rank <= 3 ? MEDAL_COLORS[rank - 1] : null;
+
+                return (
+                  <div
+                    key={entry.user_id}
+                    className={`flex items-center px-3 py-3 transition-all hover:bg-surface/50 active:bg-surface/50
+                      ${isMe ? "bg-green-dim/30" : ""}
+                      ${rank === 1 ? "bg-yellow-dim/20" : ""}
+                    `}
+                    style={
+                      isMe
+                        ? { borderLeft: "3px solid #00ff87", backgroundColor: "rgba(0,255,135,0.05)" }
+                        : mc
+                          ? { borderLeft: `3px solid ${mc.border}` }
+                          : { borderLeft: "3px solid transparent" }
+                    }
+                  >
+                    {/* Rank number */}
+                    <div className="w-8 text-center text-faint text-xs shrink-0">
+                      {rank <= 3 ? (
+                        <span className="emoji text-base" style={EMOJI_STYLE}>{MEDAL[rank - 1]}</span>
+                      ) : (
+                        <span className={isMe ? "text-green-DEFAULT font-bold" : ""}>{rank}</span>
+                      )}
+                    </div>
+
+                    {/* Player info */}
+                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 pl-2">
+                      {/* Avatar */}
+                      <div
+                        className="w-7 h-7 sm:w-9 sm:h-9 border shrink-0 overflow-hidden"
+                        style={mc ? { borderColor: mc.border } : isMe ? { borderColor: "#00ff87" } : { borderColor: "#2a2a4a" }}
+                      >
+                        {entry.avatar_url ? (
+                          <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-surface2 flex items-center justify-center">
+                            <span className={`text-[8px] sm:text-xs ${mc ? mc.text : isMe ? "text-green-DEFAULT" : "text-faint"}`}>
+                              {entry.username?.slice(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name + badge */}
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-xs truncate ${isMe ? "text-green-DEFAULT" : mc ? mc.text : "text-white"}`}>
+                          {entry.username?.toUpperCase()}
+                        </p>
+                        {rankBadge(rank) && (
+                          <p className="text-yellow-DEFAULT mt-0.5 opacity-80" style={{ fontSize: "7px" }}>
+                            {rankBadge(rank)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Win rate — hidden on mobile */}
+                    <div className="w-14 text-center text-faint hidden sm:flex flex-col justify-center">
+                      <span style={{ fontSize: "9px" }}>{winRate(entry.win_count, entry.total_bets)}</span>
+                    </div>
+
+                    {/* Balance */}
+                    <div className="w-20 sm:w-24 text-right shrink-0">
+                      <AuraAmount
+                        amount={entry.aura_balance}
+                        size={12}
+                        className={`text-[9px] sm:text-xs ${rank === 1 ? "text-yellow-DEFAULT" : isMe ? "text-green-DEFAULT" : "text-white"}`}
+                      />
+                      {/* Win rate on mobile — below balance */}
+                      <p className="text-faint sm:hidden mt-0.5" style={{ fontSize: "7px" }}>
+                        {winRate(entry.win_count, entry.total_bets)} W/R
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }

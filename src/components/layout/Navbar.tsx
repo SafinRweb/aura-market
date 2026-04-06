@@ -5,7 +5,7 @@ import { formatAura } from "@/lib/utils";
 import { User } from "@/types";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
+import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X, User as UserIcon } from "lucide-react";
 import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";
 
@@ -59,17 +59,26 @@ export default function Navbar() {
   }
 
   const links = [
-    { href: user ? "/dashboard" : "/", label: "FEED", icon: <LayoutDashboard size={13} /> },
+    { href: "/dashboard", label: "FEED", icon: <LayoutDashboard size={13} /> },
     { href: "/hub", label: "HUB", icon: <Globe size={13} /> },
     { href: "/leaderboard", label: "RANKS", icon: <Trophy size={13} /> },
   ];
+
+  const mobileLinks = [
+    { href: "/dashboard", label: "FEED", icon: <LayoutDashboard size={16} /> },
+    { href: "/hub", label: "HUB", icon: <Globe size={16} /> },
+    { href: "/leaderboard", label: "RANK", icon: <Trophy size={16} /> },
+    { href: "/notifications", label: "ALERTS", icon: <Bell size={16} />, badge: unread > 0 ? unread : undefined },
+  ];
+
+  if (pathname?.startsWith("/auth")) return null;
 
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-bg2 border-b-2 border-border flex items-center px-5 gap-4">
 
-        {/* Logo */}
-        <Link href={user ? "/dashboard" : "/"} className="flex items-center gap-2 mr-3">
+        {/* Logo — always goes to landing page */}
+        <Link href="/" className="flex items-center gap-2 mr-3">
           <span className="neon-green text-lg">AURA</span>
           <span className="text-white text-lg hidden sm:block">MARKET</span>
         </Link>
@@ -104,8 +113,8 @@ export default function Navbar() {
                 </span>
               </div>
 
-              {/* Notifications */}
-              <Link href="/notifications" className="relative p-2 border-2 border-border hover:border-border2 transition-colors">
+              {/* Notifications - Hidden on mobile since it's in bottom nav */}
+              <Link href="/notifications" className="hidden md:flex relative p-2 border-2 border-border hover:border-border2 transition-colors">
                 <Bell size={15} className="text-muted" />
                 {unread > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-DEFAULT text-white flex items-center justify-center" style={{ fontSize: "7px" }}>
@@ -114,7 +123,7 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Avatar */}
+              {/* Avatar — visible on all screen sizes, name only on desktop */}
               <Link href="/profile" className="flex items-center gap-2 p-1 border-2 border-border hover:border-green-DEFAULT transition-colors">
                 {user.avatar_url ? (
                   <Image src={user.avatar_url} alt={user.username || "Avatar"} width={32} height={32} className="w-8 h-8 object-cover" />
@@ -130,10 +139,10 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* Logout */}
+              {/* Logout - Hidden on mobile */}
               <button
                 onClick={handleLogout}
-                className="p-2 border-2 border-border hover:border-pink-DEFAULT hover:text-pink-DEFAULT text-faint transition-colors"
+                className="hidden md:flex p-2 border-2 border-border hover:border-pink-DEFAULT hover:text-pink-DEFAULT text-faint transition-colors"
               >
                 <LogOut size={15} />
               </button>
@@ -151,14 +160,16 @@ export default function Navbar() {
               </div>
             )
           )}
-          
-          {/* Mobile menu toggle */}
-          <button 
-            className="md:hidden p-2 text-faint hover:text-white hover:text-green-DEFAULT transition-colors"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <Menu size={18} />
-          </button>
+
+          {/* Mobile menu toggle - Only show when NOT logged in AND fully loaded */}
+          {!user && loaded && (
+            <button
+              className="md:hidden p-2 text-faint hover:text-white hover:text-green-DEFAULT transition-colors"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <Menu size={18} />
+            </button>
+          )}
         </div>
       </nav>
 
@@ -169,14 +180,14 @@ export default function Navbar() {
           <div className="relative w-64 max-w-[80vw] bg-bg2 h-full border-r-2 border-border shadow-[0_0_40px_rgba(0,255,135,0.1)] flex flex-col pt-5 animate-slide-in">
             <div className="flex items-center justify-between px-5 mb-8">
               <span className="neon-green text-lg">MENU</span>
-              <button 
+              <button
                 className="text-faint hover:text-white"
                 onClick={() => setIsSidebarOpen(false)}
               >
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="flex flex-col gap-2 px-3">
               {links.map(link => (
                 <Link
@@ -193,18 +204,18 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              
+
               {!user && loaded && (
                 <div className="mt-8 flex flex-col gap-3 pt-6 border-t border-border">
-                  <Link 
-                    href="/auth/login" 
+                  <Link
+                    href="/auth/login"
                     onClick={() => setIsSidebarOpen(false)}
                     className="btn-pixel btn-ghost text-sm py-4 text-center"
                   >
                     LOGIN
                   </Link>
-                  <Link 
-                    href="/auth/signup" 
+                  <Link
+                    href="/auth/signup"
                     onClick={() => setIsSidebarOpen(false)}
                     className="btn-pixel btn-green text-sm py-4 text-center"
                   >
@@ -219,18 +230,35 @@ export default function Navbar() {
 
       {/* Mobile Bottom Navigation (Logged In) */}
       {user && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-bg2 border-t-2 border-border flex items-center justify-around px-2">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex flex-col items-center gap-1 p-2 ${pathname === link.href ? "text-green-DEFAULT" : "text-faint hover:text-white"
-                }`}
-            >
-              {link.icon}
-              <span className="text-[8px] tracking-widest">{link.label}</span>
-            </Link>
-          ))}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 bg-bg2 border-t-2 border-border flex items-center justify-around px-1 safe-area-bottom">
+          {mobileLinks.map(link => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`relative flex flex-col items-center justify-center gap-1 px-3 py-1 min-w-[44px] touch-manipulation transition-all duration-200 ${isActive ? "text-green-DEFAULT" : "text-faint hover:text-white"
+                  }`}
+              >
+                {/* Visual active indicator (downward glow) */}
+                {isActive && (
+                  <div className="absolute -top-3 left-0 right-0 h-[2px] bg-green-DEFAULT" style={{ boxShadow: "0px 5px 10px rgba(0, 255, 135, 0.8)" }} />
+                )}
+
+                <span className="relative">
+                  {link.icon}
+                  {link.badge && link.badge > 0 && (
+                    <span className="absolute -top-1 -right-2 w-3.5 h-3.5 bg-pink-DEFAULT text-white flex items-center justify-center" style={{ fontSize: "6px" }}>
+                      {link.badge > 9 ? "9+" : link.badge}
+                    </span>
+                  )}
+                </span>
+                <span className={`text-[7px] tracking-widest ${isActive ? "neon-green font-bold" : ""}`}>
+                  {link.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </>

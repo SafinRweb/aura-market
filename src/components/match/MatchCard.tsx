@@ -3,6 +3,8 @@ import { Match } from "@/types";
 import { formatKickoff, timeUntilKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Flag from "@/components/ui/Flag";
+import { ArrowRight } from "lucide-react";
 
 export default function MatchCard({ match }: { match: Match }) {
   const router = useRouter();
@@ -27,11 +29,15 @@ export default function MatchCard({ match }: { match: Match }) {
   return (
     <div
       onClick={() => router.push(`/match/${match.id}`)}
-      className="card card-hover cursor-pointer relative overflow-hidden p-4"
+      className="card card-hover cursor-pointer relative overflow-hidden p-4 touch-manipulation"
     >
       {/* Status badge */}
       <div className="flex items-center justify-between mb-3">
-        <span className="text-faint text-xs">{match.group || match.stage.toUpperCase()}</span>
+        <span className="text-faint text-xs">
+          {match.group 
+            ? (match.group.toUpperCase().includes("GROUP") ? match.group.toUpperCase() : `GROUP ${match.group.toUpperCase()}`)
+            : (match.stage ? match.stage.toUpperCase().replace(/_/g, " ") : "")}
+        </span>
         <span className={`badge ${statusColor}`}>
           {match.status === "live" ? (
             <span className="flex items-center gap-1">
@@ -43,13 +49,9 @@ export default function MatchCard({ match }: { match: Match }) {
 
       {/* Teams */}
       <div className="flex items-center justify-between my-4">
-        <div className="flex flex-col items-center gap-2 flex-1">
-          {match.home_flag?.startsWith('http') ? (
-            <img src={match.home_flag} alt={match.home_team} className="w-10 h-7 object-cover rounded-[2px]" />
-          ) : (
-            <span className="text-3xl">{match.home_flag}</span>
-          )}
-          <span className="text-white text-xs text-center leading-relaxed">
+        <div className="flex flex-col items-center gap-2 flex-1 min-w-0 px-1">
+          <Flag emoji={match.home_flag} size={40} alt={match.home_team} />
+          <span className="text-white text-xs text-center leading-tight break-words w-full">
             {match.home_team.toUpperCase()}
           </span>
         </div>
@@ -67,13 +69,9 @@ export default function MatchCard({ match }: { match: Match }) {
           )}
         </div>
 
-        <div className="flex flex-col items-center gap-2 flex-1">
-          {match.away_flag?.startsWith('http') ? (
-            <img src={match.away_flag} alt={match.away_team} className="w-10 h-7 object-cover rounded-[2px]" />
-          ) : (
-            <span className="text-3xl">{match.away_flag}</span>
-          )}
-          <span className="text-white text-xs text-center leading-relaxed">
+        <div className="flex flex-col items-center gap-2 flex-1 min-w-0 px-1">
+          <Flag emoji={match.away_flag} size={40} alt={match.away_team} />
+          <span className="text-white text-xs text-center leading-tight break-words w-full">
             {match.away_team.toUpperCase()}
           </span>
         </div>
@@ -83,7 +81,7 @@ export default function MatchCard({ match }: { match: Match }) {
       <div className="border-t-2 border-border pt-3 flex items-center justify-between">
         <span className="text-faint text-xs">{formatKickoff(match.kickoff_time)}</span>
         {isMatchBettable(match.status) && (
-          <span className="text-green-DEFAULT text-xs">BET NOW →</span>
+          <span className="text-green-DEFAULT text-xs animate-pulse flex items-center justify-center gap-1">PREDICT NOW <ArrowRight size={12} className="-mt-[2px]" /></span>
         )}
       </div>
     </div>

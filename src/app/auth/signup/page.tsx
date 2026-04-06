@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { analytics } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import AuraCoin from "@/components/ui/AuraCoin";
 
 export default function SignupPage() {
@@ -104,7 +105,7 @@ export default function SignupPage() {
               disabled={loading}
               className="btn-pixel btn-green w-full mt-2"
             >
-              {loading ? "CREATING..." : "CREATE ACCOUNT →"}
+              {loading ? "CREATING..." : <span className="flex items-center justify-center gap-2">CREATE ACCOUNT <ArrowRight size={14} className="-mt-[2px]" /></span>}
             </button>
           </form>
 

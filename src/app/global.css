@@ -16,6 +16,26 @@ body {
   color: #ffffff;
   font-family: 'Press Start 2P', monospace;
   overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Emoji font override — ensures flags render on all mobile devices */
+.emoji {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji',
+    'Android Emoji', 'EmojiSymbols', 'EmojiOne Mozilla', 'Twemoji Mozilla',
+    'Segoe UI Symbol', sans-serif !important;
+  font-style: normal;
+  line-height: 1;
+}
+
+/* iOS safe area for bottom nav */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Better touch targets on mobile */
+.touch-manipulation {
+  touch-action: manipulation;
 }
 
 /* Pixel grid background */
@@ -268,6 +288,15 @@ body::before {
   }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes glowPulse {
 
   0%,
@@ -320,6 +349,10 @@ body::before {
 
 .animate-slide-in {
   animation: slideIn 0.4s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animate-glow-pulse {
@@ -414,4 +447,24 @@ body::before {
 .border-glow-green {
   border: 2px solid #00ff87;
   animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Mobile-first: prevent font bleed into emoji spans */
+span.flag {
+  font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji',
+    'Android Emoji', sans-serif !important;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+}
+
+/* Ticker animation for live feed */
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }

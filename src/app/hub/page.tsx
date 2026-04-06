@@ -2,70 +2,112 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Match } from "@/types";
-import Navbar from "@/components/layout/Navbar";
+import Flag from "@/components/ui/Flag";
 import { formatKickoff } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { Globe, Calendar, MapPin, ChevronRight } from "lucide-react";
+import {
+    Globe, Calendar, MapPin,
+    ChevronRight, RefreshCw, Clock, Lock
+} from "lucide-react";
 
-const GROUPS = [
-    { name: "GROUP A", teams: [{ name: "USA", flag: "us" }, { name: "Mexico", flag: "mx" }, { name: "Canada", flag: "ca" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP B", teams: [{ name: "Brazil", flag: "br" }, { name: "Argentina", flag: "ar" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP C", teams: [{ name: "France", flag: "fr" }, { name: "England", flag: "gb-eng" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP D", teams: [{ name: "Spain", flag: "es" }, { name: "Germany", flag: "de" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP E", teams: [{ name: "Portugal", flag: "pt" }, { name: "Belgium", flag: "be" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP F", teams: [{ name: "Netherlands", flag: "nl" }, { name: "Italy", flag: "it" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP G", teams: [{ name: "Japan", flag: "jp" }, { name: "South Korea", flag: "kr" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP H", teams: [{ name: "Morocco", flag: "ma" }, { name: "Senegal", flag: "sn" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP I", teams: [{ name: "Australia", flag: "au" }, { name: "Saudi Arabia", flag: "sa" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP J", teams: [{ name: "Colombia", flag: "co" }, { name: "Ecuador", flag: "ec" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP K", teams: [{ name: "Croatia", flag: "hr" }, { name: "Serbia", flag: "rs" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-    { name: "GROUP L", teams: [{ name: "Nigeria", flag: "ng" }, { name: "Ghana", flag: "gh" }, { name: "TBD", flag: "" }, { name: "TBD", flag: "" }] },
-];
+import { GROUPS, VENUES } from "@/lib/data";
 
-const VENUES = [
-    "MetLife Stadium, New York",
-    "SoFi Stadium, Los Angeles",
-    "AT&T Stadium, Dallas",
-    "Estadio Azteca, Mexico City",
-    "Arrowhead Stadium, Kansas City",
-    "Levi's Stadium, San Francisco",
-    "Rose Bowl, Los Angeles",
-    "Hard Rock Stadium, Miami",
-    "Gillette Stadium, Boston",
-    "Lincoln Financial Field, Philadelphia",
-    "Lumen Field, Seattle",
-    "BC Place, Vancouver",
-];
+const SYNC_KEY = "aura_hub_last_sync";
+const SYNC_INTERVAL = 12 * 60 * 60 * 1000;
+const REFRESH_COOLDOWN = 10 * 60 * 1000;
 
 export default function HubPage() {
     const router = useRouter();
     const [matches, setMatches] = useState<Match[]>([]);
     const [loading, setLoading] = useState(true);
+    const [syncing, setSyncing] = useState(false);
     const [tab, setTab] = useState<"groups" | "fixtures" | "venues">("groups");
-    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+    const [selectedStage, setSelectedStage] = useState<string>("all");
+    const [competitionName, setCompetitionName] = useState("FIFA World Cup 2026");
+    const [lastSynced, setLastSynced] = useState<string | null>(null);
+    const [refreshCooldown, setRefreshCooldown] = useState(0);
+    const [fixturesReleased, setFixturesReleased] = useState(false);
 
     useEffect(() => {
-        async function load() {
-            const { data } = await supabase
-                .from("matches")
-                .select("*")
-                .order("kickoff_time", { ascending: true });
-            setMatches(data || []);
-            setLoading(false);
-        }
-        load();
+        loadFromSupabase();
+        checkAndSync();
     }, []);
 
-    const groupedMatches = matches.reduce((acc, match) => {
-        const key = match.group || match.stage;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(match);
-        return acc;
-    }, {} as Record<string, Match[]>);
+    useEffect(() => {
+        if (refreshCooldown <= 0) return;
+        const timer = setInterval(() => {
+            setRefreshCooldown(prev => {
+                if (prev <= 1000) { clearInterval(timer); return 0; }
+                return prev - 1000;
+            });
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [refreshCooldown]);
 
-    const filteredMatches = selectedGroup
-        ? matches.filter(m => m.group === selectedGroup || m.stage === selectedGroup)
-        : matches;
+    async function loadFromSupabase() {
+        const { data } = await supabase
+            .from("matches")
+            .select("*")
+            .order("kickoff_time", { ascending: true });
+        setMatches(data || []);
+        setFixturesReleased((data?.length ?? 0) > 0);
+        setLoading(false);
+    }
+
+    async function checkAndSync() {
+        const lastSync = localStorage.getItem(SYNC_KEY);
+        const now = Date.now();
+        const shouldSync = !lastSync || now - parseInt(lastSync) > SYNC_INTERVAL;
+        if (shouldSync) await runSync();
+    }
+
+    async function runSync() {
+        setSyncing(true);
+        try {
+            const res = await fetch("/api/matches/sync");
+            const data = await res.json();
+            if (data.fixtures_released) {
+                setFixturesReleased(true);
+                if (data.competition) setCompetitionName(data.competition);
+                const { data: freshMatches } = await supabase
+                    .from("matches")
+                    .select("*")
+                    .order("kickoff_time", { ascending: true });
+                setMatches(freshMatches || []);
+            }
+            localStorage.setItem(SYNC_KEY, String(Date.now()));
+            setLastSynced(new Date().toLocaleTimeString());
+        } catch {
+            // silent fail
+        }
+        setSyncing(false);
+    }
+
+    async function handleManualRefresh() {
+        if (refreshCooldown > 0 || syncing) return;
+        setRefreshCooldown(REFRESH_COOLDOWN);
+        await runSync();
+    }
+
+    function formatCooldown(ms: number): string {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
+
+    const stages = [
+        "all",
+        ...Array.from(
+            new Set(matches.map(m => m.group || m.stage).filter(Boolean))
+        ),
+    ];
+
+    const filteredMatches =
+        selectedStage === "all"
+            ? matches
+            : matches.filter(
+                m => m.group === selectedStage || m.stage === selectedStage
+            );
 
     if (loading) return (
         <div className="min-h-screen bg-bg flex items-center justify-center">
@@ -74,176 +116,249 @@ export default function HubPage() {
     );
 
     return (
-        <div className="min-h-screen bg-bg crt">
-            <Navbar />
-            <main className="pt-16 max-w-6xl mx-auto px-4 py-8">
+        <div className="min-h-screen bg-bg crt flex flex-col">
+            <main className="pt-20 pb-24 md:pb-6 flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4">
 
-                {/* Header */}
-                <div className="text-center my-10 animate-slide-up">
-                    <div className="flex items-center justify-center gap-3 mb-3">
-                        <Globe size={20} className="text-green-DEFAULT" />
-                        <h1 className="neon-green text-2xl">WORLD CUP HUB</h1>
-                        <Globe size={20} className="text-green-DEFAULT" />
+                {/* ── Header ── */}
+                <div className="flex items-start justify-between mb-5 animate-slide-up gap-3">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <Globe size={14} className="text-green-DEFAULT shrink-0" />
+                            <h1 className="neon-green text-sm sm:text-xl">WORLD CUP HUB</h1>
+                            {syncing && (
+                                <div className="flex items-center gap-1 px-2 py-1 bg-yellow-dim border border-yellow-DEFAULT">
+                                    <RefreshCw size={9} className="text-yellow-DEFAULT animate-spin" />
+                                    <span className="text-yellow-DEFAULT text-xs">SYNCING</span>
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-faint text-xs leading-loose">
+                            {competitionName.toUpperCase()} · USA · MEX · CAN
+                        </p>
+                        {lastSynced && (
+                            <div className="flex items-center gap-1 mt-1">
+                                <Clock size={9} className="text-faint" />
+                                <p className="text-faint text-xs">SYNCED: {lastSynced}</p>
+                            </div>
+                        )}
                     </div>
-                    <p className="text-faint text-xs">FIFA WORLD CUP 2026 · USA · MEXICO · CANADA</p>
-                    <p className="text-faint text-xs mt-1">48 TEAMS · 104 MATCHES · JUNE–JULY 2026</p>
+
+                    {/* Refresh button */}
+                    <button
+                        onClick={handleManualRefresh}
+                        disabled={refreshCooldown > 0 || syncing}
+                        className={`btn-pixel flex items-center gap-1.5 text-xs px-3 py-2 shrink-0
+                            ${refreshCooldown > 0 || syncing
+                                ? "btn-ghost opacity-50 cursor-not-allowed"
+                                : "btn-ghost"
+                            }`}
+                    >
+                        {syncing ? (
+                            <>
+                                <RefreshCw size={10} className="animate-spin" />
+                                <span className="hidden sm:inline">SYNCING</span>
+                            </>
+                        ) : refreshCooldown > 0 ? (
+                            <>
+                                <Lock size={10} />
+                                <span className="hidden sm:inline">SYNCED</span>
+                            </>
+                        ) : (
+                            <>
+                                <RefreshCw size={10} />
+                                SYNC
+                            </>
+                        )}
+                    </button>
                 </div>
 
-                {/* Stats banner */}
-                <div className="grid grid-cols-3 gap-3 mb-8 stagger">
+                {/* ── Stats ── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5 stagger">
                     {[
-                        { label: "HOST NATIONS", value: "3", sub: "USA · MEX · CAN" },
-                        { label: "TOTAL TEAMS", value: "48", sub: "FIRST TIME EVER" },
-                        { label: "TOTAL MATCHES", value: "104", sub: "64 IN PREV WC" },
+                        { label: "TEAMS", value: "48", sub: "BIGGEST EVER" },
+                        { label: "MATCHES", value: "104", sub: "ALL FIXTURES" },
+                        { label: "HOSTS", value: "3", sub: "USA·MEX·CAN" },
+                        {
+                            label: "LIVE NOW",
+                            value: String(matches.filter(m => m.status === "live").length),
+                            sub: "IN PROGRESS",
+                        },
                     ].map(s => (
-                        <div key={s.label} className="card p-4 text-center">
-                            <p className="text-faint text-xs mb-2">{s.label}</p>
-                            <p className="neon-green text-2xl mb-1">{s.value}</p>
-                            <p className="text-faint text-xs">{s.sub}</p>
+                        <div key={s.label} className="card p-3 text-center">
+                            <p className="text-faint text-xs mb-1.5">{s.label}</p>
+                            <p className="neon-green text-xl mb-1">{s.value}</p>
+                            <p className="text-faint" style={{ fontSize: "7px" }}>{s.sub}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 mb-6">
+                {/* ── Tabs ── */}
+                <div className="flex gap-0 mb-5 border-2 border-border overflow-hidden">
                     {(["groups", "fixtures", "venues"] as const).map(t => (
                         <button
                             key={t}
                             onClick={() => setTab(t)}
-                            className={`px-4 py-2 text-xs border-2 transition-all
-                ${tab === t
-                                    ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                                    : "border-border text-faint hover:border-border2"
+                            className={`flex-1 py-3 text-xs transition-all touch-manipulation
+                                ${tab === t
+                                    ? "bg-green-dim text-green-DEFAULT border-r-2 border-l-2 border-green-DEFAULT -mx-px relative z-10"
+                                    : "text-faint hover:text-white hover:bg-surface2"
                                 }`}
                         >
-                            {t.toUpperCase()}
+                            {t === "groups" ? "GROUPS" : t === "fixtures" ? "FIXTURES" : "VENUES"}
                         </button>
                     ))}
                 </div>
 
-                {/* GROUPS TAB */}
+                {/* ── GROUPS TAB ── */}
                 {tab === "groups" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 stagger">
-                        {GROUPS.map(group => (
-                            <div key={group.name} className="card overflow-hidden card-hover">
-                                <div className="bg-surface2 border-b-2 border-border p-3 flex items-center justify-between">
-                                    <h3 className="text-green-DEFAULT text-sm">{group.name}</h3>
-                                    <span className="text-faint text-xs">4 TEAMS</span>
-                                </div>
-                                <div className="p-3 space-y-2">
-                                    {group.teams.map((team, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-2 hover:bg-surface2 transition-colors">
-                                            {team.flag ? (
-                                                <img src={`https://flagcdn.com/w40/${team.flag}.png`} alt={team.name} className="w-6 h-4 object-cover flex-shrink-0 rounded-[2px]" />
-                                            ) : (
-                                                <span className="text-2xl">🏳️</span>
-                                            )}
-                                            <span className={`text-sm ${team.name === "TBD" ? "text-faint" : "text-white"}`}>
-                                                {team.name.toUpperCase()}
-                                            </span>
-                                            {team.name === "TBD" && (
-                                                <span className="ml-auto badge text-faint border-border">
-                                                    QUALIFIER
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* FIXTURES TAB */}
-                {tab === "fixtures" && (
                     <div>
-                        {/* Group filter */}
-                        <div className="flex gap-2 mb-6 flex-wrap">
-                            <button
-                                onClick={() => setSelectedGroup(null)}
-                                className={`px-3 py-1 text-xs border-2 transition-all
-                  ${!selectedGroup
-                                        ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                                        : "border-border text-faint hover:border-border2"
-                                    }`}
-                            >
-                                ALL
-                            </button>
-                            {Object.keys(groupedMatches).map(group => (
-                                <button
-                                    key={group}
-                                    onClick={() => setSelectedGroup(group)}
-                                    className={`px-3 py-1 text-xs border-2 transition-all
-                    ${selectedGroup === group
-                                            ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                                            : "border-border text-faint hover:border-border2"
-                                        }`}
-                                >
-                                    {group.toUpperCase()}
-                                </button>
+                        {/* Legend */}
+                        <div className="flex items-center gap-2 mb-4 flex-wrap">
+                            {[
+                                { label: "HOST", color: "text-green-DEFAULT border-green-DEFAULT bg-green-dim" },
+                                { label: "PLAYOFF", color: "text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim" },
+                                { label: "DEBUT", color: "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim" },
+                            ].map(l => (
+                                <span key={l.label} className={`badge ${l.color}`}>{l.label}</span>
+                            ))}
+                            <span className="text-faint ml-auto" style={{ fontSize: "7px" }}>
+                                48 TEAMS · APRIL 2026
+                            </span>
+                        </div>
+
+                        {/* Groups grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger">
+                            {GROUPS.map(group => (
+                                <div key={group.name} className="card overflow-hidden card-hover" style={{ padding: 0 }}>
+                                    {/* Group header */}
+                                    <div className="bg-surface2 border-b-2 border-border px-3 py-2.5 flex items-center justify-between">
+                                        <h3 className="text-green-DEFAULT text-xs">{group.name}</h3>
+                                        <span className="text-faint" style={{ fontSize: "7px" }}>4 TEAMS</span>
+                                    </div>
+                                    {/* Teams */}
+                                    <div className="divide-y divide-border/40">
+                                        {group.teams.map((team, i) => (
+                                            <div
+                                                key={i}
+                                                className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface2 transition-colors active:bg-surface2"
+                                            >
+                                                <div className="w-[1.9rem] flex justify-center shrink-0">
+                                                    <Flag emoji={team.flag} size={24} />
+                                                </div>
+                                                <span className="text-white text-xs flex-1 leading-relaxed truncate">
+                                                    {team.name.toUpperCase()}
+                                                </span>
+                                                <div className="flex gap-1 shrink-0">
+                                                    {team.host && (
+                                                        <span className="badge text-green-DEFAULT border-green-DEFAULT bg-green-dim">HOST</span>
+                                                    )}
+                                                    {team.playoff && (
+                                                        <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim">PO</span>
+                                                    )}
+                                                    {team.debut && (
+                                                        <span className="badge text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim">NEW</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
 
-                        {filteredMatches.length === 0 ? (
-                            <div className="card p-12 text-center">
-                                <p className="text-faint text-sm">NO FIXTURES ADDED YET</p>
-                                <p className="text-faint text-xs mt-2">
-                                    MATCHES WILL APPEAR HERE ONCE THE TOURNAMENT BEGINS
+                        {/* Fun facts */}
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="bg-pink-dim border-2 border-pink-DEFAULT p-4">
+                                <p className="text-pink-DEFAULT text-xs mb-2">⚠ GROUP OF DEATH</p>
+                                <p className="text-white text-xs mb-1.5">GROUP F — NETHERLANDS · JAPAN · SWEDEN · TUNISIA</p>
+                                <p className="text-faint" style={{ fontSize: "8px" }}>TOUGHEST GROUP IN THE TOURNAMENT</p>
+                            </div>
+                            <div className="bg-yellow-dim border-2 border-yellow-DEFAULT p-4">
+                                <p className="text-yellow-DEFAULT text-xs mb-2">📖 DID YOU KNOW</p>
+                                <p className="text-white text-xs mb-1.5">ITALY MISSED THE WORLD CUP AGAIN</p>
+                                <p className="text-faint" style={{ fontSize: "8px" }}>LOST TO BOSNIA ON PENALTIES · 3RD STRAIGHT ABSENCE</p>
+                            </div>
+                            <div className="bg-blue-dim border-2 border-blue-DEFAULT p-4">
+                                <p className="text-blue-DEFAULT text-xs mb-2">⚡ HISTORIC RETURN</p>
+                                <p className="text-white text-xs mb-1.5">IRAQ BACK AFTER 40 YEARS</p>
+                                <p className="text-faint" style={{ fontSize: "8px" }}>BEAT BOLIVIA 2-1 IN PLAYOFF FINAL · LAST APPEARED IN 1986</p>
+                            </div>
+                            <div className="bg-green-dim border-2 border-green-DEFAULT p-4">
+                                <p className="text-green-DEFAULT text-xs mb-2">🌍 WORLD CUP DEBUTS</p>
+                                <p className="text-white text-xs mb-1.5">CURACAO · CAPE VERDE · UZBEKISTAN · JORDAN</p>
+                                <p className="text-faint" style={{ fontSize: "8px" }}>4 NATIONS AT THEIR FIRST EVER WORLD CUP</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── FIXTURES TAB ── */}
+                {tab === "fixtures" && (
+                    <>
+                        {!fixturesReleased || matches.length === 0 ? (
+                            <div className="card p-8 sm:p-16 text-center animate-slide-up">
+                                <Globe size={36} className="text-faint mx-auto mb-5" />
+                                <h2 className="text-white text-sm mb-3">FIXTURES NOT IN DATABASE YET</h2>
+                                <p className="text-faint text-xs leading-loose mb-6 max-w-xs mx-auto">
+                                    THE FULL MATCH SCHEDULE WILL APPEAR HERE AUTOMATICALLY
+                                    ONCE THE FOOTBALL API PUBLISHES THE 2026 FIXTURE LIST.
+                                    THE PAGE AUTO-SYNCS EVERY 12 HOURS.
                                 </p>
+                                <div className="bg-green-dim border-2 border-green-DEFAULT p-4 max-w-xs mx-auto mb-6">
+                                    <p className="text-green-DEFAULT text-xs leading-loose">
+                                        ⚽ WORLD CUP 2026<br />
+                                        JUNE 11 — JULY 19, 2026<br />
+                                        USA · MEXICO · CANADA<br />
+                                        48 TEAMS · 104 MATCHES
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleManualRefresh}
+                                    disabled={refreshCooldown > 0 || syncing}
+                                    className="btn-pixel btn-ghost flex items-center gap-2 mx-auto text-xs px-4 py-3 disabled:opacity-50"
+                                >
+                                    <RefreshCw size={10} className={syncing ? "animate-spin" : ""} />
+                                    {refreshCooldown > 0
+                                        ? `WAIT ${formatCooldown(refreshCooldown)}`
+                                        : "CHECK NOW"}
+                                </button>
                             </div>
                         ) : (
-                            <div className="space-y-3 stagger">
-                                {filteredMatches.map(match => (
-                                    <div
-                                        key={match.id}
-                                        onClick={() => router.push(`/match/${match.id}`)}
-                                        className="card card-hover cursor-pointer p-4"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            {/* Group/Stage */}
-                                            <div className="hidden md:block w-24 flex-shrink-0">
+                            <>
+                                {/* Stage filter - horizontally scrollable */}
+                                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none">
+                                    {stages.map(stage => (
+                                        <button
+                                            key={stage}
+                                            onClick={() => setSelectedStage(stage)}
+                                            className={`px-3 py-2 text-xs border-2 transition-all whitespace-nowrap shrink-0 touch-manipulation
+                                                ${selectedStage === stage
+                                                    ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
+                                                    : "border-border text-faint hover:border-border2"
+                                                }`}
+                                        >
+                                            {stage === "all" ? "ALL" : stage.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Match list */}
+                                <div className="space-y-2 stagger">
+                                    {filteredMatches.map(match => (
+                                        <div
+                                            key={match.id}
+                                            onClick={() => router.push(`/match/${match.id}`)}
+                                            className="card card-hover cursor-pointer active:scale-[0.99]"
+                                            style={{ padding: "10px 12px" }}
+                                        >
+                                            {/* Stage badge + status row */}
+                                            <div className="flex items-center justify-between mb-2">
                                                 <span className="badge text-faint border-border">
-                                                    {(match.group || match.stage).toUpperCase()}
+                                                    {match.group 
+                                                        ? (match.group.toUpperCase().includes("GROUP") ? match.group.toUpperCase() : `GROUP ${match.group.toUpperCase()}`)
+                                                        : (match.stage ? match.stage.toUpperCase().replace(/_/g, " ") : "")}
                                                 </span>
-                                            </div>
-
-                                            {/* Teams */}
-                                            <div className="flex items-center gap-3 flex-1">
-                                                {match.home_flag?.startsWith('http') ? (
-                                                    <img src={match.home_flag} alt={match.home_team} className="w-6 h-4 object-cover flex-shrink-0 rounded-[2px]" />
-                                                ) : (
-                                                    <span className="text-xl">{match.home_flag}</span>
-                                                )}
-                                                <span className="text-white text-sm">
-                                                    {match.home_team.toUpperCase()}
-                                                </span>
-
-                                                {match.status === "finished" || match.status === "live" ? (
-                                                    <span className={`px-3 text-sm font-bold
-                            ${match.status === "live" ? "text-pink-DEFAULT" : "text-white"}`}>
-                                                        {match.home_score} — {match.away_score}
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-3 text-faint text-xs">VS</span>
-                                                )}
-
-                                                <span className="text-white text-sm">
-                                                    {match.away_team.toUpperCase()}
-                                                </span>
-                                                {match.away_flag?.startsWith('http') ? (
-                                                    <img src={match.away_flag} alt={match.away_team} className="w-6 h-4 object-cover flex-shrink-0 rounded-[2px]" />
-                                                ) : (
-                                                    <span className="text-xl">{match.away_flag}</span>
-                                                )}
-                                            </div>
-
-                                            {/* Date + Status */}
-                                            <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-                                                <div className="flex items-center gap-1 text-faint text-xs">
-                                                    <Calendar size={10} />
-                                                    {formatKickoff(match.kickoff_time)}
-                                                </div>
-                                                <span className={`badge ${match.status === "live"
+                                                <span className={`badge flex-shrink-0 ${match.status === "live"
                                                     ? "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim"
                                                     : match.status === "upcoming"
                                                         ? "text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim"
@@ -257,49 +372,78 @@ export default function HubPage() {
                                                 </span>
                                             </div>
 
-                                            <ChevronRight size={14} className="text-faint flex-shrink-0" />
-                                        </div>
+                                            {/* Teams row */}
+                                            <div className="flex items-center gap-2">
+                                                <Flag emoji={match.home_flag} size={20} />
+                                                <span className="text-white text-xs flex-1 break-words leading-tight">
+                                                    {match.home_team.toUpperCase()}
+                                                </span>
 
-                                        {/* Venue */}
-                                        {match.venue && (
-                                            <div className="flex items-center gap-1 mt-3 pl-0 md:pl-28">
-                                                <MapPin size={10} className="text-faint" />
-                                                <span className="text-faint text-xs">{match.venue}</span>
+                                                {match.status === "finished" || match.status === "live" ? (
+                                                    <span className={`text-xs font-bold shrink-0 px-2
+                                                        ${match.status === "live" ? "text-pink-DEFAULT" : "text-white"}`}>
+                                                        {match.home_score} — {match.away_score}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-faint text-xs shrink-0 px-2">VS</span>
+                                                )}
+
+                                                <span className="text-white text-xs flex-1 break-words leading-tight text-right">
+                                                    {match.away_team.toUpperCase()}
+                                                </span>
+                                                <Flag emoji={match.away_flag} size={20} />
+                                                <ChevronRight size={12} className="text-faint flex-shrink-0 ml-1" />
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+
+                                            {/* Date + venue row */}
+                                            <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                                <div className="flex items-center gap-1 text-faint text-xs">
+                                                    <Calendar size={9} />
+                                                    {formatKickoff(match.kickoff_time)}
+                                                </div>
+                                                {match.venue && (
+                                                    <div className="flex items-center gap-1">
+                                                        <MapPin size={9} className="text-faint" />
+                                                        <span className="text-faint text-xs truncate max-w-[140px] sm:max-w-none">
+                                                            {match.venue}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
-                    </div>
+                    </>
                 )}
 
-                {/* VENUES TAB */}
+                {/* ── VENUES TAB ── */}
                 {tab === "venues" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 stagger">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 stagger">
                         {VENUES.map((venue, i) => {
-                            const matchCount = matches.filter(m => m.venue === venue).length;
-                            const countryCode = venue.includes("Mexico") ? "mx"
-                                : venue.includes("Vancouver") ? "ca"
-                                    : "us";
+                            const matchCount = matches.filter(m =>
+                                m.venue?.includes(venue.name)
+                            ).length;
                             return (
                                 <div key={i} className="card p-4 card-hover">
                                     <div className="flex items-start gap-3">
-                                        <img src={`https://flagcdn.com/w40/${countryCode}.png`} alt="country flag" className="w-8 h-5.5 object-cover flex-shrink-0 rounded-[2px] mt-0.5" />
-                                        <div className="flex-1">
-                                            <p className="text-white text-sm mb-1">
-                                                {venue.split(",")[0].toUpperCase()}
-                                            </p>
-                                            <p className="text-faint text-xs mb-3">
-                                                {venue.split(",")[1]?.trim().toUpperCase()}
-                                            </p>
-                                            <div className="flex items-center gap-3">
-                                                <span className="badge text-green-DEFAULT border-green-DEFAULT bg-green-dim">
-                                                    {matchCount > 0 ? `${matchCount} MATCHES` : "VENUE CONFIRMED"}
-                                                </span>
+                                        <Flag emoji={venue.country} size={28} />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-start gap-2 mb-1 flex-wrap">
+                                                <p className="text-white text-xs leading-normal">{venue.name.toUpperCase()}</p>
+                                                {venue.note && (
+                                                    <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim shrink-0">
+                                                        {venue.note}
+                                                    </span>
+                                                )}
                                             </div>
+                                            <p className="text-faint text-xs mb-3">{venue.city.toUpperCase()}</p>
+                                            <span className="badge text-green-DEFAULT border-green-DEFAULT bg-green-dim">
+                                                {matchCount > 0 ? `${matchCount} MATCHES` : "VENUE CONFIRMED"}
+                                            </span>
                                         </div>
-                                        <MapPin size={14} className="text-faint flex-shrink-0" />
+                                        <MapPin size={11} className="text-faint shrink-0 mt-0.5" />
                                     </div>
                                 </div>
                             );
@@ -307,11 +451,10 @@ export default function HubPage() {
                     </div>
                 )}
 
-                {/* Footer note */}
-                <div className="mt-10 border-2 border-border p-4 text-center animate-slide-up">
+                {/* ── Footer ── */}
+                <div className="mt-8 border-2 border-border p-4 text-center animate-slide-up">
                     <p className="text-faint text-xs leading-loose">
-                        ⚽ FULL FIXTURE LIST WILL BE UPDATED ONCE THE 2026 WORLD CUP DRAW IS FINALIZED.
-                        ALL MATCH TIMES SHOWN IN YOUR LOCAL TIMEZONE.
+                        ⚡ AUTO-SYNCS EVERY 12H · MANUAL REFRESH EVERY 10 MINS · ALL TIMES UTC
                     </p>
                 </div>
             </main>

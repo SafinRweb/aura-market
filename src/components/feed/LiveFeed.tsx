@@ -8,7 +8,7 @@ export default function LiveFeed({ items }: { items: LiveFeedItem[] }) {
   if (items.length === 0) {
     return (
       <div className="card p-6 text-center">
-        <p className="text-faint text-xs">NO BETS YET</p>
+        <p className="text-faint text-xs">NO PREDICTIONS YET</p>
         <p className="text-faint text-xs mt-2">BE THE FIRST</p>
       </div>
     );

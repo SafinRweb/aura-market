@@ -66,13 +66,21 @@ export function marketLabel(type: MarketType): string {
   return labels[type];
 }
 
-// Get streak reward amount
+// Day-based streak reward tiers (resets weekly)
+export const STREAK_ROADMAP = [
+  { day: 1, reward: 10 },
+  { day: 2, reward: 10 },
+  { day: 3, reward: 20 },
+  { day: 4, reward: 20 },
+  { day: 5, reward: 30 },
+  { day: 6, reward: 30 },
+  { day: 7, reward: 100 }, // Weekly milestone
+];
+
 export function streakReward(streak: number): number {
-  if (streak >= 30) return 200;
-  if (streak >= 14) return 100;
-  if (streak >= 7) return 50;
-  if (streak >= 3) return 25;
-  return 10;
+  // Streak loops weekly; always work within cycle of 7
+  const day = ((streak - 1) % 7) + 1;
+  return STREAK_ROADMAP.find(r => r.day === day)?.reward ?? 10;
 }
 
 // Truncate username

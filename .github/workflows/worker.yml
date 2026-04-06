@@ -1,0 +1,38 @@
+name: Aura Market Worker
+
+on:
+    schedule:
+        - cron: "*/2 * * * *"
+    workflow_dispatch:
+
+env:
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+    run-worker:
+        runs-on: ubuntu-latest
+        timeout-minutes: 1
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Python 3.11
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.11"
+
+            - name: Install dependencies
+              run: |
+                  cd worker
+                  pip install -r requirements.txt
+
+            - name: Run worker
+              env:
+                  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+                  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+                  FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+                  FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+              run: |
+                  cd worker
+                  python run_once.py

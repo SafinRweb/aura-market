@@ -56,7 +56,7 @@ export default function MarketPanel({
           {userBet && (
             <span className="flex items-center gap-1 text-green-DEFAULT text-xs">
               <CheckCircle size={11} />
-              BET PLACED
+              PREDICTION PLACED
             </span>
           )}
           {!bettable && (
@@ -72,7 +72,7 @@ export default function MarketPanel({
       {userBet && (
         <div className="bg-green-dim border-b-2 border-green-DEFAULT p-3 flex items-center justify-between">
           <p className="text-green-DEFAULT text-xs">
-            YOUR BET: {userBet.outcome.toUpperCase()} · {formatAura(userBet.stake)}
+            YOUR PREDICTION: {userBet.outcome.toUpperCase()} · {formatAura(userBet.stake)}
           </p>
           <p className="text-faint text-xs">
             EST. RETURN: {formatAura(userBet.potential_payout)}

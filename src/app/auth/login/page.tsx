@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { analytics } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
@@ -85,7 +86,7 @@ export default function LoginPage() {
               disabled={loading}
               className="btn-pixel btn-green w-full mt-2"
             >
-              {loading ? "LOADING..." : "LOGIN →"}
+              {loading ? "LOADING..." : <span className="flex items-center justify-center gap-2">LOGIN <ArrowRight size={14} className="-mt-[2px]" /></span>}
             </button>
           </form>
 

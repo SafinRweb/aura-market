@@ -6,6 +6,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import MatchCard from "@/components/match/MatchCard";
 import LiveFeed from "@/components/feed/LiveFeed";
 import DailyStreakModal from "@/components/ui/DailyStreakModal";
+import WelcomeModal from "@/components/ui/WelcomeModal";
 import { winRate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Zap, Users } from "lucide-react";
@@ -17,6 +18,8 @@ export default function DashboardPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [feedItems, setFeedItems] = useState<LiveFeedItem[]>([]);
   const [showStreak, setShowStreak] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,17 +43,22 @@ export default function DashboardPage() {
 
       setUser(profile);
 
-      // Check daily streak
+      // Check daily streak / welcome
       const { data: streak } = await supabase
         .from("daily_streaks")
         .select("*")
         .eq("user_id", authUser.id)
         .single();
 
-      if (streak) {
+      if (!streak) {
+        // Brand new user — show welcome modal
+        setShowWelcome(true);
+      } else {
         const today = new Date().toISOString().split("T")[0];
-        const lastClaimed = streak.last_claimed;
-        if (lastClaimed !== today) setShowStreak(true);
+        if (streak.last_claimed !== today) {
+          setCurrentStreak(streak.current_streak || 0);
+          setShowStreak(true);
+        }
       }
 
       // Load upcoming matches
@@ -103,9 +111,19 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      {showStreak && user && (
+      {showWelcome && user && (
+        <WelcomeModal
+          userId={user.id}
+          onClaimed={() => {
+            setShowWelcome(false);
+            setUser(prev => prev ? { ...prev, aura_balance: 100 } : prev);
+          }}
+        />
+      )}
+      {showStreak && !showWelcome && user && (
         <DailyStreakModal
           userId={user.id}
+          currentStreak={currentStreak}
           onClose={() => setShowStreak(false)}
           onClaim={(amount) => setUser(prev => prev ? {
             ...prev,
@@ -114,37 +132,37 @@ export default function DashboardPage() {
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6">
 
         {/* Stats bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          <div className="card p-4">
-            <p className="text-faint text-xs mb-2">YOUR BALANCE</p>
-            <p className="text-green-DEFAULT text-lg"><AuraAmount amount={user?.aura_balance || 0} size={28} /></p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
+          <div className="card p-3 sm:p-4">
+            <p className="text-faint text-xs mb-1 sm:mb-2">BALANCE</p>
+            <p className="text-green-DEFAULT text-base sm:text-lg"><AuraAmount amount={user?.aura_balance || 0} size={22} /></p>
           </div>
-          <div className="card p-4">
-            <p className="text-faint text-xs mb-2">WIN RATE</p>
-            <p className="text-yellow-DEFAULT text-lg">
+          <div className="card p-3 sm:p-4">
+            <p className="text-faint text-xs mb-1 sm:mb-2">WIN RATE</p>
+            <p className="text-yellow-DEFAULT text-base sm:text-lg">
               {winRate(user?.win_count || 0, user?.total_bets || 0)}
             </p>
           </div>
-          <div className="card p-4">
-            <p className="text-faint text-xs mb-2">TOTAL BETS</p>
-            <p className="text-blue-DEFAULT text-lg">{user?.total_bets || 0}</p>
+          <div className="card p-3 sm:p-4">
+            <p className="text-faint text-xs mb-1 sm:mb-2">TOTAL PREDICTIONS</p>
+            <p className="text-blue-DEFAULT text-base sm:text-lg">{user?.total_bets || 0}</p>
           </div>
-          <div className="card p-4">
-            <p className="text-faint text-xs mb-2">STREAK</p>
-            <p className="text-pink-DEFAULT text-lg">🔥 {user?.streak || 0}</p>
+          <div className="card p-3 sm:p-4">
+            <p className="text-faint text-xs mb-1 sm:mb-2">STREAK</p>
+            <p className="text-pink-DEFAULT text-base sm:text-lg">🔥 {user?.streak || 0}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
 
-          {/* Matches */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
+          {/* Matches - full width on mobile */}
+          <div className="order-2 lg:order-1 lg:col-span-2">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <Zap size={14} className="text-yellow-DEFAULT" />
-              <h2 className="text-sm text-white">UPCOMING MATCHES</h2>
+              <h2 className="text-xs sm:text-sm text-white">UPCOMING MATCHES</h2>
             </div>
 
             {matches.length === 0 ? (
@@ -153,7 +171,7 @@ export default function DashboardPage() {
                 <p className="text-faint text-xs mt-2">CHECK BACK SOON</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {matches.map(match => (
                   <MatchCard key={match.id} match={match} />
                 ))}
@@ -161,11 +179,11 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Live Feed */}
-          <div className="lg:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
+          {/* Live Feed - below matches on mobile, sidebar on desktop */}
+          <div className="order-1 lg:order-2 lg:col-span-1">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="live-dot" />
-              <h2 className="text-sm text-white">LIVE FEED</h2>
+              <h2 className="text-xs sm:text-sm text-white">LIVE FEED</h2>
               <span className="text-faint text-xs ml-auto">
                 <Users size={10} className="inline mr-1" />
                 GLOBAL
