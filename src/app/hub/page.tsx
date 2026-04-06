@@ -31,6 +31,7 @@ export default function HubPage() {
     useEffect(() => {
         loadFromSupabase();
         checkAndSync();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {

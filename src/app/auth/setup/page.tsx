@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { ArrowRight } from "lucide-react";
 import { analytics } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
-import AuraCoin from "@/components/ui/AuraCoin";
 
 export default function SetupPage() {
   const router = useRouter();

@@ -5,7 +5,7 @@ import { formatAura } from "@/lib/utils";
 import { User } from "@/types";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X, User as UserIcon } from "lucide-react";
+import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";
 

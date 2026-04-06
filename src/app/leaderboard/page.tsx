@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LeaderboardEntry } from "@/types";
-import { formatAura, winRate, rankBadge } from "@/lib/utils";
-import { Crown, Zap, Trophy } from "lucide-react";
+import { winRate, rankBadge } from "@/lib/utils";
+import { Crown, Trophy } from "lucide-react";
 import AuraCoin, { AuraAmount } from "@/components/ui/AuraCoin";
 
 const EMOJI_STYLE: React.CSSProperties = {

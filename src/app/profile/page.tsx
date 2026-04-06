@@ -10,7 +10,6 @@ import {
     Trophy, Flame, Star, Crown, Upload, LogOut
 } from "lucide-react";
 import { MarketType } from "@/types";
-import { AuraAmount } from "@/components/ui/AuraCoin";
 
 interface BetWithMatch extends Bet {
     match: Match;
