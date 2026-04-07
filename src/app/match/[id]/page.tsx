@@ -10,7 +10,7 @@ import LiveFeed from "@/components/feed/LiveFeed";
 import CountdownTimer from "@/components/match/CountdownTimer";
 import { formatKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap, Tv, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap, ExternalLink } from "lucide-react";
 import Flag from "@/components/ui/Flag";
 import Image from "next/image";
 import flsTvLogo from "@/assets/flstv.png";

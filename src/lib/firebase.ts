@@ -37,16 +37,37 @@ if (typeof window !== "undefined") {
   }
 }
 
-// Request push notification permission and get FCM token
 export async function requestNotificationPermission(): Promise<string | null> {
   if (!messaging) return null;
+  
   try {
+    // Check current permission state first
+    if (Notification.permission === "granted") {
+      // Already granted — just get the token
+      const token = await getToken(messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
+      });
+      return token;
+    }
+
+    if (Notification.permission === "denied") {
+      // User explicitly blocked — nothing we can do
+      alert("Notifications are blocked. Please enable them in your browser settings then try again.");
+      return null;
+    }
+
+    // Permission is "default" — ask the user
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") return null;
+    
+    if (permission !== "granted") {
+      return null;
+    }
+
     const token = await getToken(messaging, {
       vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
     });
     return token;
+
   } catch (error) {
     console.error("FCM token error:", error);
     return null;

@@ -6,7 +6,7 @@ import { LiveFeedItem, Match, LeaderboardEntry } from "@/types";
 import LiveFeed from "@/components/feed/LiveFeed";
 import MatchCard from "@/components/match/MatchCard";
 import { formatAura, rankBadge } from "@/lib/utils";
-import { Zap, Trophy, Lock, ArrowRight, Tv, ExternalLink } from "lucide-react";
+import { Zap, Trophy, Lock, ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";

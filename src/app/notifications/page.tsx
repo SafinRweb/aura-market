@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Notification, User } from "@/types";
+import { Notification as AppNotification, User } from "@/types";
 import AppLayout from "@/components/layout/AppLayout";
 import { timeAgo, formatAura } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ import { requestNotificationPermission } from "@/lib/firebase";
 
 export default function NotificationsPage() {
     const router = useRouter();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [pushEnabled, setPushEnabled] = useState(false);
@@ -56,7 +56,7 @@ export default function NotificationsPage() {
                 schema: "public",
                 table: "notifications",
             }, (payload) => {
-                setNotifications(prev => [payload.new as Notification, ...prev]);
+                setNotifications(prev => [payload.new as AppNotification, ...prev]);
             })
             .subscribe();
 
@@ -68,20 +68,43 @@ export default function NotificationsPage() {
         setTogglingPush(true);
 
         if (!pushEnabled) {
-            // Enable push
-            const token = await requestNotificationPermission();
-            if (!token) {
-                alert("Please allow notifications in your browser settings");
+            // Check if notifications are supported
+            if (!("Notification" in window)) {
+                alert("Push notifications are not supported in this browser");
                 setTogglingPush(false);
                 return;
             }
+
+            // Check if already denied
+            if (Notification.permission === "denied") {
+                alert(
+                    "Notifications are blocked for this site.\n\n" +
+                    "To fix this:\n" +
+                    "1. Open Chrome Settings\n" +
+                    "2. Go to Site Settings → Notifications\n" +
+                    "3. Find aura-market-football.vercel.app\n" +
+                    "4. Set to Allow\n" +
+                    "5. Come back and try again"
+                );
+                setTogglingPush(false);
+                return;
+            }
+
+            const token = await requestNotificationPermission();
+
+            if (!token) {
+                alert("Failed to register push token. Make sure notifications are allowed and try clearing site data.");
+                setTogglingPush(false);
+                return;
+            }
+
             await supabase
                 .from("users")
                 .update({ push_enabled: true, fcm_token: token })
                 .eq("id", user.id);
             setPushEnabled(true);
+
         } else {
-            // Disable push
             await supabase
                 .from("users")
                 .update({ push_enabled: false, fcm_token: null })
@@ -101,7 +124,7 @@ export default function NotificationsPage() {
         setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     }
 
-    function getIcon(type: Notification["type"]) {
+    function getIcon(type: AppNotification["type"]) {
         switch (type) {
             case "bet_won": return <Trophy size={14} className="text-green-DEFAULT" />;
             case "bet_lost": return <XCircle size={14} className="text-pink-DEFAULT" />;
@@ -112,7 +135,7 @@ export default function NotificationsPage() {
         }
     }
 
-    function getAccentColor(type: Notification["type"]) {
+    function getAccentColor(type: AppNotification["type"]) {
         switch (type) {
             case "bet_won": return "border-l-green-DEFAULT bg-green-dim";
             case "bet_lost": return "border-l-pink-DEFAULT bg-pink-dim";

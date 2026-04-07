@@ -17,6 +17,9 @@ export default function Navbar() {
   const [loaded, setLoaded] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Hide the standard app navbar across the entire admin sub-app
+  if (pathname?.startsWith("/admin")) return null;
+
   useEffect(() => {
     async function loadUser() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
