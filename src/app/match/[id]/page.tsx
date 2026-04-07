@@ -10,8 +10,10 @@ import LiveFeed from "@/components/feed/LiveFeed";
 import CountdownTimer from "@/components/match/CountdownTimer";
 import { formatKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap, Tv, ExternalLink } from "lucide-react";
 import Flag from "@/components/ui/Flag";
+import Image from "next/image";
+import flsTvLogo from "@/assets/flstv.png";
 
 const MARKETS: { type: MarketType; options: { label: string; value: string }[] }[] = [
   {
@@ -366,6 +368,21 @@ export default function MatchPage() {
                 f.match_away === match.away_team
               )}
             />
+
+            {/* Live TV Promo */}
+            <div className="mt-4 sm:mt-6 glass-panel border border-green-DEFAULT/30 p-4 sm:p-5 text-center group cursor-pointer hover:border-green-DEFAULT transition-colors"
+                 onClick={() => window.open('https://flstv.vercel.app', '_blank')}
+            >
+              <div className="w-16 h-16 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <Image src={flsTvLogo} alt="FLS TV Logo" width={64} height={64} className="object-contain drop-shadow-[0_0_15px_rgba(0,255,135,0.5)]" />
+              </div>
+              <p className="text-faint text-2xs sm:text-xs mb-3 leading-relaxed">
+                Catch all the action live on Football Live TV!
+              </p>
+              <button className="btn-pixel btn-green w-full text-2xs sm:text-xs py-2 flex items-center justify-center gap-2">
+                OPEN FLS TV <ExternalLink size={12} className="-mt-[1px]" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

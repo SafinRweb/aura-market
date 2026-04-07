@@ -85,20 +85,23 @@ export default function Navbar() {
 
         {/* Nav links */}
         <div className="hidden md:flex items-center gap-1">
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-2 px-4 py-2 text-sm border-2 transition-all
-              ${pathname === link.href
-                  ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                  : "border-transparent text-faint hover:text-white hover:border-border"
-                }`}
-            >
-              {link.icon}
-              {link.label}
-            </Link>
-          ))}
+          {links.map(link => {
+            if (!user && link.label === "FEED") return null;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-2 px-4 py-2 text-sm border-2 transition-all
+                ${pathname === link.href
+                    ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
+                    : "border-transparent text-faint hover:text-white hover:border-border"
+                  }`}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            )
+          })}
         </div>
 
         {/* Right side */}
@@ -189,21 +192,24 @@ export default function Navbar() {
             </div>
 
             <div className="flex flex-col gap-2 px-3">
-              {links.map(link => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsSidebarOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 text-sm border-2 transition-all
-                  ${pathname === link.href
-                      ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
-                      : "border-transparent text-faint hover:text-white hover:border-border hover:bg-surface2"
-                    }`}
-                >
-                  {link.icon}
-                  {link.label}
-                </Link>
-              ))}
+              {links.map(link => {
+                if (!user && link.label === "FEED") return null;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-4 text-sm border-2 transition-all
+                    ${pathname === link.href
+                        ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
+                        : "border-transparent text-faint hover:text-white hover:border-border hover:bg-surface2"
+                      }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </Link>
+                )
+              })}
 
               {!user && loaded && (
                 <div className="mt-8 flex flex-col gap-3 pt-6 border-t border-border">

@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Set max duration (optional but helpful for sync routes)
 import { createClient } from "@supabase/supabase-js";
 import { generateSeedPools as generateSeeds } from "@/lib/utils";
 

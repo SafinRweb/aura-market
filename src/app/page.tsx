@@ -6,10 +6,11 @@ import { LiveFeedItem, Match, LeaderboardEntry } from "@/types";
 import LiveFeed from "@/components/feed/LiveFeed";
 import MatchCard from "@/components/match/MatchCard";
 import { formatAura, rankBadge } from "@/lib/utils";
-import { Zap, Trophy, Lock, ArrowRight } from "lucide-react";
+import { Zap, Trophy, Lock, ArrowRight, Tv, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import AuraCoin from "@/components/ui/AuraCoin";
+import flsTvLogo from "@/assets/flstv.png";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -109,20 +110,20 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto mt-12 sm:mt-16 stagger">
-            {[
-              { label: "Login Bonus", value: "Upto 200", color: "text-green-DEFAULT", showCoin: true },
-              { label: "AURA", value: "Infinite", color: "text-yellow-DEFAULT" },
-              { label: "ENTRY", value: "FREE", color: "text-pink-DEFAULT" },
-            ].map(stat => (
-              <div key={stat.label} className="card p-3">
-                <p className="text-faint text-xs mb-1">{stat.label}</p>
-                <p className={`${stat.color} text-xs inline-flex items-center gap-1 justify-center`}>
-                  {stat.value}
-                  {'showCoin' in stat && <AuraCoin size={22} />}
-                </p>
-              </div>
-            ))}
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mt-12 sm:mt-16 stagger">
+            <div className="flex items-center gap-2">
+              <Lock className="text-pink-DEFAULT hidden sm:block" size={14} />
+              <span className="text-faint text-xs">100% FREE TO PLAY</span>
+            </div>
+            <span className="text-border hidden sm:block">•</span>
+            <div className="flex items-center gap-2">
+              <Trophy className="text-yellow-DEFAULT hidden sm:block" size={14} />
+              <span className="text-faint text-xs">GLOBAL LEADERBOARD</span>
+            </div>
+            <span className="text-border hidden sm:block">•</span>
+            <div className="flex items-center gap-2">
+              <span className="text-faint text-xs">EARN AURA POINTS</span>
+            </div>
           </div>
         </section>
 
@@ -165,7 +166,7 @@ export default function LandingPage() {
           )}
         </section>
 
-        <div className="pixel-divider mx-5 order-last lg:order-none hidden sm:block" />
+
 
         {/* Live feed + Leaderboard */}
         <section className="px-5 py-10 max-w-7xl mx-auto w-full order-2 lg:order-none">
@@ -205,9 +206,8 @@ export default function LandingPage() {
                       className="flex items-center gap-2 px-3 py-3 border-b-2 border-border last:border-b-0 hover:bg-surface2 transition-colors"
                     >
                       {/* Rank medal */}
-                      <div className={`w-7 text-center text-xs font-bold flex-shrink-0 ${
-                        i === 0 ? "text-yellow-DEFAULT" : i === 1 ? "text-muted" : i === 2 ? "text-pink-DEFAULT" : "text-faint"
-                      }`}>
+                      <div className={`w-7 text-center text-xs font-bold flex-shrink-0 ${i === 0 ? "text-yellow-DEFAULT" : i === 1 ? "text-muted" : i === 2 ? "text-pink-DEFAULT" : "text-faint"
+                        }`}>
                         {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${entry.rank}`}
                       </div>
 
@@ -247,8 +247,34 @@ export default function LandingPage() {
 
         <div className="pixel-divider mx-5 order-4 lg:order-none" />
 
+        {/* Live TV Promo block moved to bottom */}
+        <section className="px-5 py-12 max-w-7xl mx-auto w-full order-5 lg:order-none mt-10">
+          <div className="card p-8 sm:p-12 border-green-DEFAULT/50 bg-green-dim/10 flex flex-col md:flex-row items-center justify-between gap-8 animate-slide-up">
+            <div className="flex-1 text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
+                <div className="w-20 h-20 flex items-center justify-center -ml-2">
+                  <Image src={flsTvLogo} alt="FLS TV Logo" width={80} height={80} className="object-contain drop-shadow-[0_0_15px_rgba(0,255,135,0.5)]" />
+                </div>
+              </div>
+              <p className="text-white text-sm sm:text-base leading-loose mb-3">
+                Watch all world cup matches LIVE in ultra high definition.
+              </p>
+              <p className="text-faint text-xs leading-relaxed max-w-xl md:mx-0 mx-auto">
+                Why not give it a try? FlsTV is the ultimate companion to Aura Market. Predict the games here, and watch the thrilling results unfold live!
+              </p>
+            </div>
+            <div className="flex-shrink-0">
+              <button onClick={() => window.open('https://flstv.vercel.app', '_blank')} className="btn-pixel btn-green px-8 py-4 text-sm flex items-center gap-2 w-full sm:w-auto justify-center">
+                WATCH MATCHES LIVE <ExternalLink size={16} className="-mt-[2px]" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="pixel-divider mx-5 order-6 lg:order-none hidden sm:block" />
+
         {/* CTA Footer */}
-        <section className="px-5 py-16 text-center order-5 lg:order-none">
+        <section className="px-5 py-16 text-center order-7 lg:order-none">
           <div className="max-w-xl mx-auto stagger">
             <p className="text-faint text-sm mb-4">READY TO PROVE YOUR KNOWLEDGE?</p>
             <h2 className="neon-green text-2xl mb-8 leading-loose">JOIN THE MARKET</h2>
