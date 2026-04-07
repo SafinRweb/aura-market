@@ -26,7 +26,7 @@ export default function AdminNotificationsPage() {
                 // Get all users
                 const { data: users } = await supabase
                     .from("users")
-                    .select("id");
+                    .select("id, fcm_token");
 
                 if (!users || users.length === 0) {
                     setError("No users found");
@@ -50,12 +50,25 @@ export default function AdminNotificationsPage() {
                     await supabase.from("notifications").insert(chunk);
                 }
 
+                // Actually trigger Mobile Push
+                const validTokens = users.map(u => u.fcm_token).filter(Boolean);
+                if (validTokens.length > 0) {
+                    await fetch("/api/notifications/send", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            tokens: validTokens,
+                            type,
+                            message
+                        })
+                    });
+                }
+
                 setResult(`✅ Sent to ${users.length} users successfully`);
             } else {
                 // Send to specific user
                 const { data: user } = await supabase
                     .from("users")
-                    .select("id")
+                    .select("id, fcm_token")
                     .eq("username", username.toLowerCase())
                     .single();
 
@@ -72,6 +85,18 @@ export default function AdminNotificationsPage() {
                     aura_change: 0,
                     is_read: false,
                 });
+
+                // Actually trigger Mobile Push
+                if (user.fcm_token) {
+                    await fetch("/api/notifications/send", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            tokens: [user.fcm_token],
+                            type,
+                            message
+                        })
+                    });
+                }
 
                 setResult(`✅ Sent to ${username} successfully`);
             }
