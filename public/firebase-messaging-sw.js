@@ -12,10 +12,5 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(function(payload) {
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: '/favicon.ico',
-  });
-});
+// Built-in FCM handling will automatically display push notifications in the background 
+// since we include the 'notification' key in our API payload.

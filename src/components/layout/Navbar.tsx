@@ -19,6 +19,15 @@ export default function Navbar() {
 
 
   useEffect(() => {
+    async function fetchUnreadCount(userId: string) {
+      const { count } = await supabase
+        .from("notifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("is_read", false);
+      setUnread(count || 0);
+    }
+
     async function loadUser() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) { setLoaded(true); return; }
@@ -30,28 +39,35 @@ export default function Navbar() {
         .single();
       if (data) setUser(data);
 
-      const { count } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", authUser.id)
-        .eq("is_read", false);
-      setUnread(count || 0);
+      await fetchUnreadCount(authUser.id);
       setLoaded(true);
+
+      const channel = supabase
+        .channel("navbar")
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "users",
+        }, (payload) => {
+          setUser(prev => prev ? { ...prev, ...payload.new as User } : prev);
+        })
+        .on("postgres_changes", {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+        }, () => {
+          fetchUnreadCount(authUser.id);
+        })
+        .subscribe();
+
+      return () => { supabase.removeChannel(channel); };
     }
-    loadUser();
 
-    const channel = supabase
-      .channel("navbar")
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "users",
-      }, (payload) => {
-        setUser(prev => prev ? { ...prev, ...payload.new as User } : prev);
-      })
-      .subscribe();
+    const cleanupPromise = loadUser();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { 
+      cleanupPromise.then(cleanup => cleanup && cleanup()); 
+    };
   }, []);
 
   async function handleLogout() {

@@ -7,7 +7,7 @@ import { timeAgo, formatAura } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import {
     Bell, Trophy, XCircle, Gift,
-    Clock, CheckCheck, ToggleLeft, ToggleRight
+    Clock, CheckCheck, ToggleLeft, ToggleRight, X
 } from "lucide-react";
 import { requestNotificationPermission } from "@/lib/firebase";
 
@@ -18,6 +18,7 @@ export default function NotificationsPage() {
     const [loading, setLoading] = useState(true);
     const [pushEnabled, setPushEnabled] = useState(false);
     const [togglingPush, setTogglingPush] = useState(false);
+    const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
 
     useEffect(() => {
         async function load() {
@@ -36,13 +37,6 @@ export default function NotificationsPage() {
             setUser(userRes.data);
             setPushEnabled(userRes.data?.push_enabled || false);
             setNotifications(notifRes.data || []);
-
-            // Mark all as read
-            await supabase
-                .from("notifications")
-                .update({ is_read: true })
-                .eq("user_id", authUser.id)
-                .eq("is_read", false);
 
             setLoading(false);
         }
@@ -161,11 +155,11 @@ export default function NotificationsPage() {
             <div className="max-w-2xl mx-auto px-4 py-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8 animate-slide-up">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8 animate-slide-up">
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <Bell size={16} className="text-green-DEFAULT" />
-                            <h1 className="neon-green text-xl">NOTIFICATIONS</h1>
+                            <h1 className="neon-green text-lg sm:text-xl">NOTIFICATIONS</h1>
                         </div>
                         <p className="text-faint text-xs">
                             {unreadCount > 0
@@ -176,7 +170,7 @@ export default function NotificationsPage() {
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}
-                            className="flex items-center gap-2 btn-pixel btn-ghost text-xs px-3 py-2"
+                            className="flex items-center gap-2 btn-pixel btn-ghost text-xs px-3 py-2 w-full sm:w-auto justify-center"
                         >
                             <CheckCheck size={12} />
                             MARK ALL READ
@@ -242,7 +236,14 @@ export default function NotificationsPage() {
                             {notifications.map(notif => (
                                 <div
                                     key={notif.id}
-                                    className={`flex items-start gap-4 p-4 border-l-4 transition-colors
+                                    onClick={() => {
+                                        setSelectedNotification(notif);
+                                        if (!notif.is_read) {
+                                            supabase.from("notifications").update({ is_read: true }).eq("id", notif.id).then();
+                                            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+                                        }
+                                    }}
+                                    className={`flex items-start gap-3 sm:gap-4 p-3 sm:p-4 border-l-4 transition-colors cursor-pointer
                     hover:brightness-110 animate-fade-in
                     ${getAccentColor(notif.type)}
                     ${!notif.is_read ? "opacity-100" : "opacity-70"}
@@ -290,6 +291,45 @@ export default function NotificationsPage() {
                     </p>
                 </div>
             </div>
+
+            {/* Notification Modal */}
+            {selectedNotification && (
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-bg/80 backdrop-blur-sm animate-fade-in">
+                    <div className="card w-full sm:max-w-sm p-6 border-t-2 sm:border-2 border-green-DEFAULT bg-surface animate-slide-up" 
+                         style={{ boxShadow: "0 -5px 20px rgba(0,255,135,0.15)" }}>
+                        <div className="flex items-center justify-between mb-4 border-b-2 border-border pb-4">
+                            <div className="flex items-center gap-3">
+                                {getIcon(selectedNotification.type)}
+                                <h3 className="text-white text-sm">NOTIFICATION DETAILS</h3>
+                            </div>
+                            <button onClick={() => setSelectedNotification(null)}>
+                                <X size={16} className="text-faint hover:text-white" />
+                            </button>
+                        </div>
+                        
+                        <p className="text-white text-sm leading-relaxed mb-6">
+                            {selectedNotification.message}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-auto">
+                            <p className="text-faint text-xs">{timeAgo(selectedNotification.created_at)}</p>
+                            {selectedNotification.aura_change !== 0 && (
+                                <span className={`text-xs font-bold ${selectedNotification.aura_change > 0 ? "text-green-DEFAULT" : "text-pink-DEFAULT"}`}>
+                                    {selectedNotification.aura_change > 0 ? "+" : ""}
+                                    {formatAura(selectedNotification.aura_change)} AURA
+                                </span>
+                            )}
+                        </div>
+
+                        <button 
+                            className="btn-pixel w-full mt-6 text-xs py-2 hover:bg-surface2 transition-colors border-2 border-border"
+                            onClick={() => setSelectedNotification(null)}
+                        >
+                            CLOSE
+                        </button>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }
