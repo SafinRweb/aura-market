@@ -17,8 +17,6 @@ export default function Navbar() {
   const [loaded, setLoaded] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Hide the standard app navbar across the entire admin sub-app
-  if (pathname?.startsWith("/admin")) return null;
 
   useEffect(() => {
     async function loadUser() {
@@ -74,7 +72,7 @@ export default function Navbar() {
     { href: "/notifications", label: "ALERTS", icon: <Bell size={16} />, badge: unread > 0 ? unread : undefined },
   ];
 
-  if (pathname?.startsWith("/auth")) return null;
+  if (pathname?.startsWith("/auth") || pathname?.startsWith("/admin")) return null;
 
   return (
     <>
