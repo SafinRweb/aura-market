@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { Match, Pool } from "@/types";
 import { validateStake, formatAura, calcPayout, marketLabel } from "@/lib/utils";
 import { analytics } from "@/lib/analytics";
-import { X, AlertTriangle, ArrowRight } from "lucide-react";
+import { X, AlertTriangle, ArrowRight, TrendingUp, Target } from "lucide-react";
 import { MarketType } from "@/types";
 
 interface Props {
@@ -18,6 +18,8 @@ interface Props {
   onClose: () => void;
   onSuccess: (stake: number) => void;
 }
+
+const QUICK_STAKES = [10, 25, 50, 100];
 
 export default function BetModal({
   match, marketType, outcome, outcomeLabel,
@@ -41,9 +43,9 @@ export default function BetModal({
   const newTotalPool = totalPool + stakeNum;
   const estimatedPayout = calcPayout(stakeNum, newWinningSide, newTotalPool);
   const estimatedOdds = stakeNum > 0 ? (estimatedPayout / stakeNum).toFixed(2) : "0.00";
+  const estimatedProfit = estimatedPayout - stakeNum;
 
   function handleStakeChange(val: string) {
-    // Strip decimals immediately
     const clean = val.replace(/[^0-9]/g, "");
     setStake(clean);
     setError(null);
@@ -51,6 +53,13 @@ export default function BetModal({
 
   function handleMax() {
     setStake(String(userBalance));
+  }
+
+  function handleQuickStake(amount: number) {
+    if (amount <= userBalance) {
+      setStake(String(amount));
+      setError(null);
+    }
   }
 
   async function handleConfirm() {
@@ -141,12 +150,6 @@ export default function BetModal({
     }
 
     // Update user stats
-    await supabase
-      .from("users")
-      .update({ total_bets: supabase.rpc as unknown as number })
-      .eq("id", userId);
-
-    // Simpler stats update
     const { data: userStats } = await supabase
       .from("users")
       .select("total_bets, total_lost")
@@ -169,46 +172,67 @@ export default function BetModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{background:"rgba(0,0,0,0.9)"}}>
-      <div className="card w-full max-w-md border-glow-green animate-slide-up">
+    <div
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.85)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {/* Bottom sheet on mobile, centered card on desktop */}
+      <div className="bottom-sheet glass-panel-strong w-full sm:max-w-md sm:mx-4 border-t-2 sm:border-2 border-green-DEFAULT/30 safe-area-bottom"
+        style={{ boxShadow: "0 -8px 40px rgba(0,255,135,0.1), 0 0 60px rgba(0,0,0,0.5)" }}>
+
+        {/* Drag handle — mobile only */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 bg-white/20" />
+        </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b-2 border-border">
-          <div>
-            <p className="text-faint text-xs mb-1">{marketLabel(marketType)}</p>
-            <h2 className="text-white text-sm">{match.home_team} VS {match.away_team}</h2>
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-white/5">
+          <div className="min-w-0">
+            <p className="text-faint text-2xs mb-1">{marketLabel(marketType)}</p>
+            <h2 className="text-white text-xs sm:text-sm truncate">
+              {match.home_team} VS {match.away_team}
+            </h2>
           </div>
-          <button onClick={onClose} className="p-2 border-2 border-border hover:border-pink-DEFAULT text-faint hover:text-pink-DEFAULT transition-colors">
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 p-2 border border-white/10 hover:border-pink-DEFAULT text-faint hover:text-pink-DEFAULT transition-all ml-3"
+          >
             <X size={14} />
           </button>
         </div>
 
-        <div className="p-5 space-y-5">
+        <div className="p-4 sm:p-5 space-y-4">
 
-          {/* Selected outcome */}
-          <div className="bg-green-dim border-2 border-green-DEFAULT p-4">
-            <p className="text-faint text-xs mb-1">YOUR PICK</p>
-            <p className="text-green-DEFAULT text-sm">{outcomeLabel.toUpperCase()}</p>
+          {/* Selected outcome chip */}
+          <div className="flex items-center gap-3 bg-green-dim/50 border border-green-DEFAULT/30 p-3">
+            <Target size={14} className="text-green-DEFAULT flex-shrink-0" />
+            <div>
+              <p className="text-faint text-2xs">YOUR PICK</p>
+              <p className="text-green-DEFAULT text-xs sm:text-sm">{outcomeLabel.toUpperCase()}</p>
+            </div>
           </div>
 
-          {/* Pool info */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="card p-3">
-              <p className="text-faint text-xs mb-1">TOTAL POOL</p>
-              <p className="text-white text-sm">{formatAura(newTotalPool)}</p>
+          {/* Pool stats row */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="glass-panel p-3">
+              <p className="text-faint text-2xs mb-1">TOTAL POOL</p>
+              <p className="text-white text-xs sm:text-sm">{formatAura(newTotalPool)}</p>
             </div>
-            <div className="card p-3">
-              <p className="text-faint text-xs mb-1">EST. ODDS</p>
-              <p className="text-yellow-DEFAULT text-sm">{estimatedOdds}x</p>
+            <div className="glass-panel p-3">
+              <div className="flex items-center gap-1 mb-1">
+                <TrendingUp size={9} className="text-yellow-DEFAULT" />
+                <p className="text-faint text-2xs">EST. ODDS</p>
+              </div>
+              <p className="text-yellow-DEFAULT text-xs sm:text-sm">{estimatedOdds}x</p>
             </div>
           </div>
 
           {/* Stake input */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-faint text-xs">YOUR STAKE</label>
-              <button onClick={handleMax} className="text-green-DEFAULT text-xs hover:underline">
+              <label className="text-faint text-2xs">YOUR STAKE</label>
+              <button onClick={handleMax} className="text-green-DEFAULT text-2xs hover:underline">
                 MAX ({formatAura(userBalance)})
               </button>
             </div>
@@ -220,32 +244,54 @@ export default function BetModal({
               placeholder="MIN 5 🤫"
               min={5}
               step={1}
-              className="pixel-input text-sm"
+              className="pixel-input text-xs sm:text-sm"
+              autoFocus
             />
+
+            {/* Quick stake buttons */}
+            <div className="grid grid-cols-4 gap-2 mt-2">
+              {QUICK_STAKES.map(amount => (
+                <button
+                  key={amount}
+                  onClick={() => handleQuickStake(amount)}
+                  disabled={amount > userBalance}
+                  className={`p-2 border text-2xs text-center transition-all
+                    ${amount > userBalance
+                      ? "border-border text-faint opacity-40 cursor-not-allowed"
+                      : stake === String(amount)
+                        ? "border-green-DEFAULT text-green-DEFAULT bg-green-dim"
+                        : "border-border text-faint hover:border-green-DEFAULT/50 hover:text-white cursor-pointer"
+                    }`}
+                >
+                  {amount}
+                </button>
+              ))}
+            </div>
+
             {error && (
               <div className="flex items-center gap-2 mt-2">
                 <AlertTriangle size={11} className="text-pink-DEFAULT flex-shrink-0" />
-                <p className="text-pink-DEFAULT text-xs">{error}</p>
+                <p className="text-pink-DEFAULT text-2xs">{error}</p>
               </div>
             )}
           </div>
 
-          {/* Estimated payout */}
+          {/* Estimated payout breakdown */}
           {stakeNum >= 5 && (
-            <div className="bg-surface2 border-2 border-border p-4 animate-fade-in">
-              <div className="flex justify-between mb-2">
-                <p className="text-faint text-xs">STAKE</p>
-                <p className="text-white text-xs">{formatAura(stakeNum)}</p>
-              </div>
-              <div className="flex justify-between mb-2">
-                <p className="text-faint text-xs">EST. PAYOUT</p>
-                <p className="text-green-DEFAULT text-xs">{formatAura(estimatedPayout)}</p>
-              </div>
-              <div className="pixel-divider" />
+            <div className="glass-panel p-3 sm:p-4 animate-fade-in space-y-2">
               <div className="flex justify-between">
-                <p className="text-faint text-xs">EST. PROFIT</p>
-                <p className={`text-xs ${estimatedPayout > stakeNum ? "text-green-DEFAULT" : "text-pink-DEFAULT"}`}>
-                  {estimatedPayout > stakeNum ? "+" : ""}{formatAura(estimatedPayout - stakeNum)}
+                <p className="text-faint text-2xs">STAKE</p>
+                <p className="text-white text-2xs">{formatAura(stakeNum)}</p>
+              </div>
+              <div className="flex justify-between">
+                <p className="text-faint text-2xs">EST. PAYOUT</p>
+                <p className="text-green-DEFAULT text-2xs">{formatAura(estimatedPayout)}</p>
+              </div>
+              <div className="pixel-divider" style={{ margin: "8px 0" }} />
+              <div className="flex justify-between">
+                <p className="text-faint text-2xs">EST. PROFIT</p>
+                <p className={`text-xs ${estimatedProfit > 0 ? "text-green-DEFAULT" : "text-pink-DEFAULT"}`}>
+                  {estimatedProfit > 0 ? "+" : ""}{formatAura(estimatedProfit)}
                 </p>
               </div>
             </div>
@@ -255,12 +301,19 @@ export default function BetModal({
           <button
             onClick={handleConfirm}
             disabled={loading || !stake || parseInt(stake) < 5}
-            className="btn-pixel btn-green w-full text-sm py-4 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="btn-pixel btn-green w-full text-2xs sm:text-xs py-3 sm:py-4 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? "PLACING PREDICTION..." : <span className="flex items-center gap-2">LOCK IN {stake ? formatAura(parseInt(stake)) : "🤫"} <ArrowRight size={14} className="-mt-[2px]" /></span>}
+            {loading ? (
+              "PLACING PREDICTION..."
+            ) : (
+              <span className="flex items-center gap-2">
+                LOCK IN {stake ? formatAura(parseInt(stake)) : "🤫"}
+                <ArrowRight size={14} className="-mt-[1px]" />
+              </span>
+            )}
           </button>
 
-          <p className="text-faint text-xs text-center">
+          <p className="text-faint text-2xs text-center pb-1">
             PREDICTIONS ARE FINAL. NO CANCELLATIONS.
           </p>
         </div>

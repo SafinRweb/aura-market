@@ -468,3 +468,166 @@ span.flag {
     transform: translateX(-50%);
   }
 }
+
+/* ── Glass Panel ── */
+.glass-panel {
+  background: rgba(26, 26, 46, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-panel-strong {
+  background: rgba(13, 13, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Ambient glow behind hero sections ── */
+.hero-glow {
+  position: relative;
+}
+
+.hero-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0, 255, 135, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Mobile Bottom Sheet ── */
+@keyframes slideFromBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideToBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.bottom-sheet {
+  animation: slideFromBottom 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* ── Odds bar animated fill ── */
+@keyframes barFill {
+  from {
+    width: 0%;
+  }
+}
+
+.odds-bar-fill {
+  animation: barFill 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* ── Glowing tip on active bars ── */
+.odds-bar-glow {
+  position: relative;
+}
+
+.odds-bar-glow::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 135, 0.6));
+  filter: blur(2px);
+}
+
+/* ── Enhanced card interaction for market options ── */
+.market-option {
+  transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.market-option:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 255, 135, 0.15);
+}
+
+.market-option:active:not(:disabled) {
+  transform: translateY(0px) scale(0.98);
+}
+
+/* ── Subtle pulse for live status ── */
+@keyframes livePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 110, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 0, 110, 0);
+  }
+}
+
+.live-pulse {
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+/* ── Status gradient banner ── */
+.status-gradient-live {
+  background: linear-gradient(135deg, rgba(255, 0, 110, 0.15) 0%, rgba(255, 0, 110, 0.05) 100%);
+  border-left: 3px solid #ff006e;
+}
+
+.status-gradient-upcoming {
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.1) 0%, rgba(0, 255, 135, 0.02) 100%);
+  border-left: 3px solid #00ff87;
+}
+
+.status-gradient-finished {
+  background: linear-gradient(135deg, rgba(102, 102, 136, 0.15) 0%, rgba(102, 102, 136, 0.05) 100%);
+  border-left: 3px solid #666688;
+}
+
+/* ── Responsive text scaling for match page ── */
+@media (max-width: 640px) {
+  .match-team-name {
+    font-size: 8px !important;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .match-score {
+    font-size: 22px !important;
+  }
+
+  .match-info-row {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+/* ── Shimmer loading effect ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(0, 255, 135, 0.04) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}

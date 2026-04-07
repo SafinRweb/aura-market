@@ -202,7 +202,7 @@ export default function MatchPage() {
         <div className="card p-6 mb-6 animate-slide-up">
           <div className="flex items-center justify-between mb-6">
             <span className="text-faint text-xs">
-              {match.competition} · {(match.group || match.stage || "").toUpperCase()}
+              {match.competition} · {(match.group_name || match.stage || "").toUpperCase()}
             </span>
             <span className={`badge ${match.status === "live"
                 ? "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim"

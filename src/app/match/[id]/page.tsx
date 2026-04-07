@@ -10,7 +10,7 @@ import LiveFeed from "@/components/feed/LiveFeed";
 import CountdownTimer from "@/components/match/CountdownTimer";
 import { formatKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap } from "lucide-react";
 import Flag from "@/components/ui/Flag";
 
 const MARKETS: { type: MarketType; options: { label: string; value: string }[] }[] = [
@@ -147,10 +147,17 @@ export default function MatchPage() {
     setUserBets(betsRes.data || []);
   }
 
+  // Compute total pool across all markets for the stats bar
+  const totalPoolAll = pools.reduce((sum, p) => sum + p.total_staked, 0);
+  const totalBettors = new Set(userBets.map(b => b.user_id)).size;
+
   if (loading) return (
     <AppLayout>
       <div className="flex items-center justify-center min-h-screen">
-        <p className="neon-green text-sm animate-pulse">LOADING MATCH...</p>
+        <div className="text-center">
+          <div className="inline-block w-6 h-6 border-2 border-green-DEFAULT border-t-transparent animate-spin mb-3" style={{borderRadius: '0'}} />
+          <p className="neon-green text-xs animate-pulse">LOADING MATCH...</p>
+        </div>
       </div>
     </AppLayout>
   );
@@ -162,6 +169,12 @@ export default function MatchPage() {
       </div>
     </AppLayout>
   );
+
+  const statusClass = match.status === "live"
+    ? "status-gradient-live"
+    : match.status === "upcoming"
+      ? "status-gradient-upcoming"
+      : "status-gradient-finished";
 
   return (
     <AppLayout>
@@ -188,27 +201,29 @@ export default function MatchPage() {
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
 
-        {/* Back */}
+        {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-faint hover:text-white text-xs mb-6 transition-colors"
+          className="flex items-center gap-2 text-faint hover:text-green-DEFAULT text-xs mb-4 sm:mb-6 transition-colors group"
         >
-          <ArrowLeft size={13} />
-          BACK
+          <ArrowLeft size={13} className="group-hover:-translate-x-1 transition-transform" />
+          BACK TO MATCHES
         </button>
 
-        {/* Match header */}
-        <div className="card p-6 mb-6 animate-slide-up">
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-faint text-xs">
-              {match.competition} · {(match.group || match.stage || "").toUpperCase()}
+        {/* ═══ Match Hero Card ═══ */}
+        <div className="glass-panel hero-glow p-4 sm:p-6 mb-4 sm:mb-6 animate-slide-up overflow-hidden">
+
+          {/* Status + Competition Bar */}
+          <div className={`flex items-center justify-between mb-5 sm:mb-6 px-3 py-2 -mx-1 ${statusClass}`}>
+            <span className="text-faint text-2xs sm:text-xs truncate mr-2">
+              {match.competition} · {(match.group_name || match.stage || "").toUpperCase()}
             </span>
-            <span className={`badge ${match.status === "live"
-                ? "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim"
+            <span className={`badge flex-shrink-0 ${match.status === "live"
+                ? "text-pink-DEFAULT border-pink-DEFAULT bg-pink-dim live-pulse"
                 : match.status === "upcoming"
-                  ? "text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim"
+                  ? "text-green-DEFAULT border-green-DEFAULT bg-green-dim"
                   : "text-faint border-border"
               }`}>
               {match.status === "live" ? (
@@ -219,30 +234,39 @@ export default function MatchPage() {
             </span>
           </div>
 
-          {/* Teams */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex flex-col items-center gap-3 flex-1">
-              <Flag emoji={match.home_flag} size={72} alt={match.home_team} />
-              <p className="text-white text-sm text-center leading-loose">
+          {/* ── Teams Section ── */}
+          <div className="flex items-center justify-between mb-5 sm:mb-6 relative" style={{ zIndex: 1 }}>
+
+            {/* Home Team */}
+            <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="animate-float">
+                <Flag emoji={match.home_flag} size={56} alt={match.home_team} />
+              </div>
+              <p className="match-team-name text-white text-xs sm:text-sm text-center leading-relaxed px-1">
                 {match.home_team.toUpperCase()}
               </p>
             </div>
 
-            <div className="flex flex-col items-center px-6">
+            {/* Center: Score or Countdown */}
+            <div className="flex flex-col items-center px-3 sm:px-6 flex-shrink-0">
               {match.status === "live" || match.status === "finished" ? (
                 <div className="text-center">
-                  <p className="text-white text-3xl mb-2">
-                    {match.home_score} — {match.away_score}
+                  <p className="match-score text-white text-2xl sm:text-3xl mb-2"
+                    style={{ textShadow: match.status === "live" ? "0 0 20px rgba(255,0,110,0.4)" : "none" }}>
+                    {match.home_score} <span className="text-faint">—</span> {match.away_score}
                   </p>
                   {match.status === "live" && (
-                    <span className="text-pink-DEFAULT text-xs flex items-center gap-1 justify-center">
+                    <span className="text-pink-DEFAULT text-2xs flex items-center gap-1 justify-center">
                       <span className="live-dot" /> LIVE
                     </span>
+                  )}
+                  {match.status === "finished" && (
+                    <span className="text-faint text-2xs">FULL TIME</span>
                   )}
                 </div>
               ) : (
                 <div className="text-center">
-                  <p className="text-faint text-sm mb-2">VS</p>
+                  <p className="text-faint text-xs sm:text-sm mb-2">VS</p>
                   <CountdownTimer
                     kickoffTime={match.kickoff_time}
                     status={match.status}
@@ -251,40 +275,62 @@ export default function MatchPage() {
               )}
             </div>
 
-            <div className="flex flex-col items-center gap-3 flex-1">
-              <Flag emoji={match.away_flag} size={72} alt={match.away_team} />
-              <p className="text-white text-sm text-center leading-loose">
+            {/* Away Team */}
+            <div className="flex flex-col items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className="animate-float" style={{ animationDelay: "0.5s" }}>
+                <Flag emoji={match.away_flag} size={56} alt={match.away_team} />
+              </div>
+              <p className="match-team-name text-white text-xs sm:text-sm text-center leading-relaxed px-1">
                 {match.away_team.toUpperCase()}
               </p>
             </div>
           </div>
 
-          {/* Match info */}
-          <div className="flex items-center justify-center gap-6 border-t-2 border-border pt-4 flex-wrap">
-            <span className="flex items-center gap-2 text-faint text-xs">
-              <Calendar size={11} />
+          {/* ── Match Info Row ── */}
+          <div className="match-info-row flex items-center justify-center gap-4 sm:gap-6 border-t border-white/5 pt-3 sm:pt-4 flex-wrap" style={{ zIndex: 1 }}>
+            <span className="flex items-center gap-2 text-faint text-2xs sm:text-xs">
+              <Calendar size={11} className="text-green-DEFAULT" />
               {formatKickoff(match.kickoff_time)}
             </span>
             {match.venue && (
-              <span className="flex items-center gap-2 text-faint text-xs">
-                <MapPin size={11} />
+              <span className="flex items-center gap-2 text-faint text-2xs sm:text-xs">
+                <MapPin size={11} className="text-green-DEFAULT" />
                 {match.venue}
               </span>
             )}
           </div>
         </div>
 
-        {/* Main content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ═══ Quick Stats Bar ═══ */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6 stagger">
+          <div className="glass-panel p-3 text-center">
+            <TrendingUp size={14} className="text-green-DEFAULT mx-auto mb-1" />
+            <p className="text-white text-xs sm:text-sm">{totalPoolAll.toLocaleString()}</p>
+            <p className="text-faint text-2xs mt-1">TOTAL POOL</p>
+          </div>
+          <div className="glass-panel p-3 text-center">
+            <Users size={14} className="text-yellow-DEFAULT mx-auto mb-1" />
+            <p className="text-white text-xs sm:text-sm">{totalBettors || "—"}</p>
+            <p className="text-faint text-2xs mt-1">PREDICTORS</p>
+          </div>
+          <div className="glass-panel p-3 text-center">
+            <Zap size={14} className="text-pink-DEFAULT mx-auto mb-1" />
+            <p className="text-white text-xs sm:text-sm">{MARKETS.length}</p>
+            <p className="text-faint text-2xs mt-1">MARKETS</p>
+          </div>
+        </div>
 
-          {/* Markets */}
-          <div className="lg:col-span-2 space-y-4">
+        {/* ═══ Main Content Grid ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+
+          {/* Markets Column */}
+          <div className="lg:col-span-2 space-y-3 sm:space-y-4 stagger">
             {!isMatchBettable(match.status) && (
-              <div className="bg-pink-dim border-2 border-pink-DEFAULT p-4 flex items-center gap-3">
+              <div className="glass-panel border-l-[3px] border-pink-DEFAULT p-4 flex items-center gap-3 animate-slide-up">
                 <span className="text-pink-DEFAULT text-xl">🔒</span>
                 <div>
-                  <p className="text-pink-DEFAULT text-sm">PREDICTIONS LOCKED</p>
-                  <p className="text-faint text-xs mt-1">
+                  <p className="text-pink-DEFAULT text-xs sm:text-sm">PREDICTIONS LOCKED</p>
+                  <p className="text-faint text-2xs mt-1">
                     {match.status === "live"
                       ? "MATCH IS IN PROGRESS"
                       : "THIS MATCH HAS ENDED"}
@@ -308,11 +354,11 @@ export default function MatchPage() {
             ))}
           </div>
 
-          {/* Match feed */}
+          {/* Match Feed Sidebar */}
           <div className="lg:col-span-1">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <div className="live-dot" />
-              <h2 className="text-white text-sm">MATCH FEED</h2>
+              <h2 className="text-white text-xs sm:text-sm">MATCH FEED</h2>
             </div>
             <LiveFeed
               items={feed.filter(f =>

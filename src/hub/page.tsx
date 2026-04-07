@@ -68,11 +68,11 @@ export default function HubPage() {
     }
 
     // Get unique stages
-    const stages = ["all", ...Array.from(new Set(matches.map(m => m.group || m.stage).filter(Boolean)))];
+    const stages = ["all", ...Array.from(new Set(matches.map(m => m.group_name || m.stage).filter(Boolean)))];
 
     const filteredMatches = selectedStage === "all"
         ? matches
-        : matches.filter(m => m.group === selectedStage || m.stage === selectedStage);
+        : matches.filter(m => m.group_name === selectedStage || m.stage === selectedStage);
 
     // Get unique venues
     const venues = Array.from(new Set(matches.map(m => m.venue).filter(Boolean)));
@@ -228,7 +228,7 @@ export default function HubPage() {
                                                 {/* Stage badge */}
                                                 <div className="hidden md:block w-28 flex-shrink-0">
                                                     <span className="badge text-faint border-border">
-                                                        {(match.group || match.stage || "").toUpperCase()}
+                                                        {(match.group_name || match.stage || "").toUpperCase()}
                                                     </span>
                                                 </div>
 

@@ -34,8 +34,8 @@ export default function MatchCard({ match }: { match: Match }) {
       {/* Status badge */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-faint text-xs">
-          {match.group 
-            ? (match.group.toUpperCase().includes("GROUP") ? match.group.toUpperCase() : `GROUP ${match.group.toUpperCase()}`)
+          {match.group_name 
+            ? (match.group_name.toUpperCase().includes("GROUP") ? match.group_name.toUpperCase() : `GROUP ${match.group_name.toUpperCase()}`)
             : (match.stage ? match.stage.toUpperCase().replace(/_/g, " ") : "")}
         </span>
         <span className={`badge ${statusColor}`}>

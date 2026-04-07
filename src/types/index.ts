@@ -29,7 +29,7 @@ export interface Match {
   away_score: number;
   competition: string;
   stage: "group" | "round_of_32" | "round_of_16" | "quarter" | "semi" | "third_place" | "final";
-  group: string | null;
+  group_name: string | null;
   venue: string;
   api_match_id: string | null;
 }
@@ -54,6 +54,7 @@ export interface Pool {
   market_type: string;
   outcome: string;
   total_staked: number;
+  is_seed?: boolean;
 }
 
 export interface Notification {

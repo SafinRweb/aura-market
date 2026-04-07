@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { generateSeedPools as generateSeeds } from "@/lib/utils";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -137,6 +138,49 @@ export async function GET() {
                     .from("matches")
                     .insert(matchData);
                 if (!error) synced++;
+            }
+        }
+
+        // Auto seed pools for new matches
+        for (const match of allMatches) {
+            const { data: matchInDb } = await supabase
+                .from("matches")
+                .select("id")
+                .eq("api_match_id", String(match.id))
+                .single();
+
+            if (!matchInDb) continue;
+
+            const { data: poolExists } = await supabase
+                .from("pools")
+                .select("id")
+                .eq("match_id", matchInDb.id)
+                .limit(1);
+
+            if (!poolExists || poolExists.length === 0) {
+                const seeds = generateSeeds(
+                    (match.homeTeam as Record<string, string>)?.name || "",
+                    (match.awayTeam as Record<string, string>)?.name || ""
+                );
+
+                const poolEntries = [];
+                for (const [market, outcomes] of Object.entries(seeds)) {
+                    for (const [outcome, amount] of Object.entries(
+                        outcomes as Record<string, number>
+                    )) {
+                        poolEntries.push({
+                            match_id: matchInDb.id,
+                            market_type: market,
+                            outcome,
+                            total_staked: amount,
+                            is_seed: true,
+                        });
+                    }
+                }
+
+                if (poolEntries.length > 0) {
+                    await supabase.from("pools").insert(poolEntries);
+                }
             }
         }
 

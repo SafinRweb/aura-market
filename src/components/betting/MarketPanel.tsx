@@ -2,7 +2,7 @@
 import { Match, Pool, Bet } from "@/types";
 import { MarketType } from "@/types";
 import { formatAura, marketLabel, isMatchBettable } from "@/lib/utils";
-import { Lock, CheckCircle } from "lucide-react";
+import { Lock, CheckCircle, TrendingUp } from "lucide-react";
 
 interface MarketOption {
   label: string;
@@ -44,25 +44,35 @@ export default function MarketPanel({
     return Math.round((getPoolAmount(outcome) / totalPool) * 100);
   }
 
+  // Determine the "hot" option (highest pool %)
+  const hotOption = options.reduce((best, opt) => {
+    const pct = getPoolPercent(opt.value);
+    return pct > (best.pct || 0) ? { value: opt.value, pct } : best;
+  }, { value: "", pct: 0 });
+
   return (
-    <div className="card overflow-hidden">
+    <div className="glass-panel overflow-hidden">
       {/* Market header */}
-      <div className="flex items-center justify-between p-4 border-b-2 border-border bg-surface2">
-        <h3 className="text-white text-sm">{marketLabel(marketType)}</h3>
-        <div className="flex items-center gap-3">
-          <span className="text-faint text-xs">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={12} className="text-green-DEFAULT" />
+          <h3 className="text-white text-xs sm:text-sm">{marketLabel(marketType)}</h3>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-faint text-2xs sm:text-xs">
             POOL: {formatAura(totalPool)}
           </span>
           {userBet && (
-            <span className="flex items-center gap-1 text-green-DEFAULT text-xs">
-              <CheckCircle size={11} />
-              PREDICTION PLACED
+            <span className="flex items-center gap-1 text-green-DEFAULT text-2xs">
+              <CheckCircle size={10} />
+              <span className="hidden sm:inline">PREDICTION PLACED</span>
+              <span className="sm:hidden">✓</span>
             </span>
           )}
           {!bettable && (
-            <span className="flex items-center gap-1 text-pink-DEFAULT text-xs">
-              <Lock size={11} />
-              LOCKED
+            <span className="flex items-center gap-1 text-pink-DEFAULT text-2xs">
+              <Lock size={10} />
+              <span className="hidden sm:inline">LOCKED</span>
             </span>
           )}
         </div>
@@ -70,51 +80,77 @@ export default function MarketPanel({
 
       {/* Your bet info */}
       {userBet && (
-        <div className="bg-green-dim border-b-2 border-green-DEFAULT p-3 flex items-center justify-between">
-          <p className="text-green-DEFAULT text-xs">
+        <div className="bg-green-dim border-b border-green-DEFAULT/30 p-3 flex items-center justify-between">
+          <p className="text-green-DEFAULT text-2xs sm:text-xs">
             YOUR PREDICTION: {userBet.outcome.toUpperCase()} · {formatAura(userBet.stake)}
           </p>
-          <p className="text-faint text-xs">
+          <p className="text-faint text-2xs sm:text-xs">
             EST. RETURN: {formatAura(userBet.potential_payout)}
           </p>
         </div>
       )}
 
-      {/* Options */}
-      <div className="p-4 grid gap-3"
-        style={{gridTemplateColumns: options.length === 2 ? "1fr 1fr" : options.length === 3 ? "1fr 1fr 1fr" : "1fr 1fr"}}>
+      {/* Options Grid — 1 col mobile, responsive on desktop */}
+      <div className="p-3 sm:p-4 grid gap-2 sm:gap-3"
+        style={{
+          gridTemplateColumns:
+            options.length === 2
+              ? "1fr 1fr"
+              : `repeat(${options.length}, 1fr)`
+        }}>
         {options.map(option => {
           const percent = getPoolPercent(option.value);
+          const odds = getOdds(option.value);
           const isMyBet = userBet?.outcome === option.value;
+          const isHot = hotOption.value === option.value && totalPool > 0;
 
           return (
             <button
               key={option.value}
               onClick={() => bettable && !userBet && onSelect(option.value, option.label)}
               disabled={!bettable || !!userBet}
-              className={`relative overflow-hidden p-4 border-2 text-left transition-all
+              className={`market-option relative overflow-hidden p-3 sm:p-4 border-2 text-left
                 ${isMyBet
                   ? "border-green-DEFAULT bg-green-dim"
                   : bettable && !userBet
-                    ? "border-border hover:border-green-DEFAULT hover:bg-surface2 cursor-pointer"
+                    ? "border-border hover:border-green-DEFAULT/60 bg-surface2/50 cursor-pointer"
                     : "border-border opacity-60 cursor-not-allowed"
                 }`}
             >
-              {/* Pool bar */}
-              <div
-                className="absolute bottom-0 left-0 h-1 bg-green-DEFAULT opacity-30 transition-all"
-                style={{width: `${percent}%`}}
+              {/* Animated pool bar */}
+              <div className="absolute bottom-0 left-0 h-[3px] odds-bar-fill"
+                style={{
+                  width: `${percent}%`,
+                  background: isMyBet
+                    ? "rgba(0, 255, 135, 0.6)"
+                    : isHot
+                      ? "linear-gradient(90deg, rgba(0, 255, 135, 0.3), rgba(0, 255, 135, 0.6))"
+                      : "rgba(0, 255, 135, 0.2)"
+                }}
               />
 
-              <p className={`text-sm mb-2 ${isMyBet ? "text-green-DEFAULT" : "text-white"}`}>
+
+
+              {/* Option Label */}
+              <p className={`text-2xs sm:text-xs mb-2 ${isMyBet ? "text-green-DEFAULT" : "text-white"}`}>
                 {option.label.toUpperCase()}
               </p>
-              <div className="flex items-center justify-between">
-                <p className="text-faint text-xs">{getOdds(option.value)}</p>
-                <p className="text-faint text-xs">{percent}%</p>
+
+              {/* Odds + Percent row */}
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-xs sm:text-sm font-bold ${
+                  isMyBet ? "text-green-DEFAULT" : odds !== "—" ? "text-yellow-DEFAULT" : "text-faint"
+                }`}>
+                  {odds}
+                </span>
+                <span className="text-faint text-2xs">{percent}%</span>
               </div>
+
+              {/* My bet marker */}
               {isMyBet && (
-                <p className="text-green-DEFAULT text-xs mt-1">✓ YOUR PICK</p>
+                <p className="text-green-DEFAULT text-2xs mt-2 flex items-center gap-1">
+                  <CheckCircle size={8} /> YOUR PICK
+                </p>
               )}
             </button>
           );

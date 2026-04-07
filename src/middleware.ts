@@ -38,18 +38,34 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
 
-  // These routes require login
+  // Protected user routes
   const protectedRoutes = ["/dashboard", "/profile", "/notifications", "/match"];
   const isProtected = protectedRoutes.some(r => path.startsWith(r));
-
   if (isProtected && !user) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Auth pages redirect to dashboard if already logged in
+  // Auth pages redirect to dashboard if logged in
   const authRoutes = ["/auth/login", "/auth/signup"];
   if (authRoutes.includes(path) && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Admin routes protection
+  if (path.startsWith("/admin") && path !== "/admin/login") {
+    if (!user) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+    // Check is_admin flag
+    const { data: profile } = await supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return response;

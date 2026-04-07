@@ -99,7 +99,7 @@ export default function HubPage() {
     const stages = [
         "all",
         ...Array.from(
-            new Set(matches.map(m => m.group || m.stage).filter(Boolean))
+            new Set(matches.map(m => m.group_name || m.stage).filter(Boolean))
         ),
     ];
 
@@ -107,7 +107,7 @@ export default function HubPage() {
         selectedStage === "all"
             ? matches
             : matches.filter(
-                m => m.group === selectedStage || m.stage === selectedStage
+                m => m.group_name === selectedStage || m.stage === selectedStage
             );
 
     if (loading) return (
@@ -355,8 +355,8 @@ export default function HubPage() {
                                             {/* Stage badge + status row */}
                                             <div className="flex items-center justify-between mb-2">
                                                 <span className="badge text-faint border-border">
-                                                    {match.group 
-                                                        ? (match.group.toUpperCase().includes("GROUP") ? match.group.toUpperCase() : `GROUP ${match.group.toUpperCase()}`)
+                                                    {match.group_name 
+                                                        ? (match.group_name.toUpperCase().includes("GROUP") ? match.group_name.toUpperCase() : `GROUP ${match.group_name.toUpperCase()}`)
                                                         : (match.stage ? match.stage.toUpperCase().replace(/_/g, " ") : "")}
                                                 </span>
                                                 <span className={`badge flex-shrink-0 ${match.status === "live"

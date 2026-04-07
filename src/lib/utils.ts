@@ -1,6 +1,88 @@
 import { formatDistanceToNow, format, differenceInSeconds } from "date-fns";
 import { MarketType } from "../types";
 
+// FIFA ranking based strength ratings for all 48 teams
+// Lower number = stronger team = lower odds
+const TEAM_STRENGTH: Record<string, number> = {
+  // Top tier
+  "Spain": 1, "France": 2, "Argentina": 3, "England": 4,
+  "Brazil": 5, "Portugal": 6, "Netherlands": 7, "Belgium": 8,
+  "Germany": 9, "Croatia": 10, "Uruguay": 11, "Colombia": 12,
+  "Morocco": 13, "USA": 14, "Mexico": 15, "Japan": 16,
+  // Mid tier
+  "South Korea": 17, "Australia": 18, "Switzerland": 19,
+  "Austria": 20, "Turkey": 21, "Turkiye": 21, "Norway": 22,
+  "Sweden": 23, "Czechia": 24, "Ecuador": 25, "Senegal": 26,
+  "Canada": 27, "Scotland": 28, "Algeria": 29, "Tunisia": 30,
+  "Paraguay": 31, "Qatar": 32, "South Africa": 33, "Egypt": 34,
+  "Ivory Coast": 35, "Ghana": 36, "Panama": 37,
+  // Lower tier
+  "Iran": 39, "Saudi Arabia": 40, "Serbia": 41,
+  "Bosnia and Herzegovina": 42, "New Zealand": 43,
+  "Jordan": 44, "Uzbekistan": 45, "Cape Verde": 46,
+  "Curacao": 47, "Haiti": 48, "DR Congo": 49, "Iraq": 50,
+};
+
+export function getTeamStrength(team: string): number {
+  return TEAM_STRENGTH[team] || 35; // Default mid-lower tier
+}
+
+// Generate realistic seed pools for a match
+export function generateSeedPools(
+  homeTeam: string,
+  awayTeam: string,
+  totalSeed: number = 1000
+): Record<string, Record<string, number>> {
+  const homeStrength = getTeamStrength(homeTeam);
+  const awayStrength = getTeamStrength(awayTeam);
+
+  // Calculate raw weights — lower rank number = more weight
+  const homeWeight = 1 / homeStrength;
+  const awayWeight = 1 / awayStrength;
+  const drawWeight = 0.28; // Draw is always ~25-30% in football
+
+  const totalWeight = homeWeight + awayWeight + drawWeight;
+
+  // Normalize to percentages
+  const homePercent = homeWeight / totalWeight;
+  const awayPercent = awayWeight / totalWeight;
+  const drawPercent = drawWeight / totalWeight;
+
+  // Over/Under — slightly favor under in most matches
+  const overPercent = 0.48;
+  const underPercent = 0.52;
+
+  // BTTS — roughly 50/50 with slight lean to No
+  const bttsYesPercent = 0.46;
+  const bttsNoPercent = 0.54;
+
+  // First scorer — home team slightly favored
+  const firstScorerHome = homePercent * 0.9;
+  const firstScorerAway = awayPercent * 0.9;
+  const firstScorerNone = 0.08; // ~8% chance of 0-0
+
+  return {
+    match_winner: {
+      home: Math.floor(totalSeed * homePercent),
+      draw: Math.floor(totalSeed * drawPercent),
+      away: Math.floor(totalSeed * awayPercent),
+    },
+    over_under: {
+      over: Math.floor(totalSeed * overPercent),
+      under: Math.floor(totalSeed * underPercent),
+    },
+    btts: {
+      yes: Math.floor(totalSeed * bttsYesPercent),
+      no: Math.floor(totalSeed * bttsNoPercent),
+    },
+    first_scorer: {
+      home: Math.floor(totalSeed * firstScorerHome),
+      away: Math.floor(totalSeed * firstScorerAway),
+      none: Math.floor(totalSeed * firstScorerNone),
+    },
+  };
+}
+
 // Format aura amount (number only — pair with <AuraCoin /> for the icon)
 export function formatAura(amount: number): string {
   return amount.toLocaleString();
