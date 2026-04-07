@@ -49,8 +49,9 @@ export async function POST(req: Request) {
             failures: response.responses.filter(r => !r.success).map(r => r.error?.message),
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Failed to send push notifications:", error);
-        return NextResponse.json({ error: error.message || "Failed to trigger pushes" }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : "Failed to trigger pushes";
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }
