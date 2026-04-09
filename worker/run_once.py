@@ -166,7 +166,127 @@ def void_bet(bet: dict):
         message=f"Bet voided — stake refunded · {bet['stake']} 🤫",
         aura_change=0,
     )
+def pay_referral_commission(user_id: str, profit: int):
+    if profit <= 0:
+        return
 
+    try:
+        # Check if this user was referred by someone
+        user_res = supabase.table("users")\
+            .select("referred_by, username")\
+            .eq("id", user_id)\
+            .single()\
+            .execute()
+
+        if not user_res.data or not user_res.data.get("referred_by"):
+            return
+
+        referrer_id = user_res.data["referred_by"]
+        referred_username = user_res.data["username"]
+
+        # Calculate 10% commission
+        commission = max(1, int(profit * 0.10))
+
+        # Get referrer balance
+        referrer_res = supabase.table("users")\
+            .select("aura_balance, referral_earnings")\
+            .eq("id", referrer_id)\
+            .single()\
+            .execute()
+
+        if not referrer_res.data:
+            return
+
+        r = referrer_res.data
+
+        # Pay commission
+        supabase.table("users").update({
+            "aura_balance": r["aura_balance"] + commission,
+            "referral_earnings": (r.get("referral_earnings") or 0) + commission,
+        }).eq("id", referrer_id).execute()
+
+        # Update referral record
+        supabase.table("referrals")\
+            .update({"total_commission": supabase.table("referrals")
+                .select("total_commission")
+                .eq("referrer_id", referrer_id)
+                .eq("referred_id", user_id)
+                .execute().data[0]["total_commission"] + commission
+            })\
+            .eq("referrer_id", referrer_id)\
+            .eq("referred_id", user_id)\
+            .execute()
+
+        # Notify referrer
+        send_notification(
+            user_id=referrer_id,
+            notif_type="bet_won",
+            message=f"💸 {referred_username} won a bet — you earned {commission} 🤫 commission!",
+            aura_change=commission,
+        )
+
+        log.info(f"Referral commission: {commission} paid to {referrer_id}")
+
+    except Exception as e:
+        log.error(f"Referral commission error: {e}")
+
+
+def pay_first_bet_bonus(user_id: str, referrer_id: str):
+    try:
+        # Check if first bet bonus already paid
+        ref_res = supabase.table("referrals")\
+            .select("first_bet_bonus_paid")\
+            .eq("referrer_id", referrer_id)\
+            .eq("referred_id", user_id)\
+            .single()\
+            .execute()
+
+        if not ref_res.data or ref_res.data["first_bet_bonus_paid"]:
+            return
+
+        # Pay 50 🤫 bonus to referrer
+        referrer_res = supabase.table("users")\
+            .select("aura_balance, referral_earnings")\
+            .eq("id", referrer_id)\
+            .single()\
+            .execute()
+
+        if not referrer_res.data:
+            return
+
+        r = referrer_res.data
+        supabase.table("users").update({
+            "aura_balance": r["aura_balance"] + 50,
+            "referral_earnings": (r.get("referral_earnings") or 0) + 50,
+        }).eq("id", referrer_id).execute()
+
+        # Mark bonus as paid
+        supabase.table("referrals").update({
+            "first_bet_bonus_paid": True,
+        }).eq("referrer_id", referrer_id)\
+          .eq("referred_id", user_id)\
+          .execute()
+
+        # Get referred username
+        user_res = supabase.table("users")\
+            .select("username")\
+            .eq("id", user_id)\
+            .single()\
+            .execute()
+
+        username = user_res.data["username"] if user_res.data else "your referral"
+
+        send_notification(
+            user_id=referrer_id,
+            notif_type="daily_reward",
+            message=f"🎉 {username} placed their first bet! You earned 50 🤫 bonus!",
+            aura_change=50,
+        )
+
+        log.info(f"First bet bonus paid to {referrer_id}")
+
+    except Exception as e:
+        log.error(f"First bet bonus error: {e}")
 
 def accountant(match_id: str):
     log.info(f"💰 ACCOUNTANT processing {match_id}...")
@@ -225,6 +345,7 @@ def accountant(match_id: str):
                         "biggest_win": max(u["biggest_win"], profit),
                         "win_count": u["win_count"] + 1,
                     }).eq("id", bet["user_id"]).execute()
+
                     send_notification(
                         user_id=bet["user_id"],
                         notif_type="bet_won",
@@ -232,6 +353,25 @@ def accountant(match_id: str):
                         aura_change=profit,
                     )
                     log.info(f"Paid {payout} to {bet['user_id']}")
+
+                    # ── REFERRAL COMMISSION ──────────────────────────────
+                    pay_referral_commission(bet["user_id"], profit)
+
+            # Check first bet bonus for winners
+            for bet in winners:
+                user_check = supabase.table("users")\
+                    .select("referred_by, total_bets")\
+                    .eq("id", bet["user_id"])\
+                    .single()\
+                    .execute()
+
+                if user_check.data and user_check.data.get("referred_by"):
+                    if user_check.data.get("total_bets") == 1:
+                        pay_first_bet_bonus(
+                            bet["user_id"],
+                            user_check.data["referred_by"]
+                        )
+
             for bet in losers:
                 supabase.table("bets").update({
                     "status": "lost",

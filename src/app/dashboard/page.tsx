@@ -9,8 +9,10 @@ import DailyStreakModal from "@/components/ui/DailyStreakModal";
 import WelcomeModal from "@/components/ui/WelcomeModal";
 import { winRate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
-import { Zap, Users } from "lucide-react";
+import { Zap, Users, Target } from "lucide-react";
 import { AuraAmount } from "@/components/ui/AuraPoints";
+import CustomEventCard from "@/components/events/CustomEventCard";
+import { CustomEvent, CustomEventVote } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -21,6 +23,9 @@ export default function DashboardPage() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  const [activeEvents, setActiveEvents] = useState<CustomEvent[]>([]);
+  const [userVotes, setUserVotes] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function load() {
@@ -77,7 +82,29 @@ export default function DashboardPage() {
         .select("*")
         .limit(30);
 
-      setFeedItems(feed || []);
+      // Load custom events
+      const { data: eventsData } = await supabase
+        .from("custom_events")
+        .select("*, options:custom_event_options(*)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (eventsData && eventsData.length > 0) {
+        setActiveEvents(eventsData as CustomEvent[]);
+        const eventIds = eventsData.map(e => e.id);
+        const { data: votes } = await supabase
+          .from("custom_event_votes")
+          .select("*")
+          .eq("user_id", authUser.id)
+          .in("event_id", eventIds);
+        
+        if (votes) {
+          const voteMap: Record<string, string> = {};
+          votes.forEach(v => voteMap[v.event_id] = v.option_id);
+          setUserVotes(voteMap);
+        }
+      }
+
       setLoading(false);
     }
     load();
@@ -108,6 +135,24 @@ export default function DashboardPage() {
       </div>
     </AppLayout>
   );
+
+  async function handleVoteEvent(eventId: string, optionId: string) {
+    if (!user) return false;
+    const res = await fetch("/api/events/vote", {
+      method: "POST",
+      body: JSON.stringify({ eventId, optionId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setUserVotes(prev => ({ ...prev, [eventId]: optionId }));
+      if (data.rewarded) {
+        setUser(prev => prev ? { ...prev, aura_balance: prev.aura_balance + data.rewarded } : prev);
+      }
+      return true;
+    }
+    alert(data.error || "Failed to vote.");
+    return false;
+  }
 
   return (
     <AppLayout>
@@ -158,8 +203,28 @@ export default function DashboardPage() {
 
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6">
 
-          {/* Matches - full width on mobile */}
+          {/* Main Column */}
           <div className="order-2 lg:order-1 lg:col-span-2">
+
+            {/* Custom Events Block */}
+            {activeEvents.length > 0 && (
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                  <Target size={14} className="text-blue-DEFAULT" />
+                  <h2 className="text-xs sm:text-sm text-white font-bold tracking-widest">LIMITED EVENTS</h2>
+                </div>
+                {activeEvents.map(event => (
+                  <div key={event.id} className="mb-4">
+                    <CustomEventCard 
+                      event={event} 
+                      userVoteId={userVotes[event.id]} 
+                      onVote={handleVoteEvent} 
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center gap-3 mb-3 sm:mb-4">
               <Zap size={14} className="text-yellow-DEFAULT" />
               <h2 className="text-xs sm:text-sm text-white">UPCOMING MATCHES</h2>

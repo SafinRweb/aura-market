@@ -10,6 +10,8 @@ import { Zap, Trophy, Lock, ArrowRight, ExternalLink, Users } from "lucide-react
 import Link from "next/link";
 import Image from "next/image";
 import AuraPoints from "@/components/ui/AuraPoints";
+import CustomEventCard from "@/components/events/CustomEventCard";
+import { CustomEvent } from "@/types";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -18,6 +20,7 @@ export default function LandingPage() {
   const [feed, setFeed] = useState<LiveFeedItem[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [activeEvents, setActiveEvents] = useState<CustomEvent[]>([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +31,20 @@ export default function LandingPage() {
       if (user) setIsLoggedIn(true);
 
       // Load public data
-      const [matchRes, feedRes, lbRes] = await Promise.all([
+      const [matchRes, feedRes, lbRes, eventsRes] = await Promise.all([
         supabase.from("matches").select("*")
           .in("status", ["upcoming", "live"])
           .order("kickoff_time", { ascending: true })
           .limit(12),
         supabase.from("live_feed").select("*").limit(20),
         supabase.from("leaderboard").select("*").limit(10),
+        supabase.from("custom_events").select("*, options:custom_event_options(*)").eq("status", "active").order("created_at", { ascending: false }),
       ]);
 
-      setMatches(matchRes.data || []);
-      setFeed(feedRes.data || []);
-      setLeaderboard(lbRes.data || []);
+      if (matchRes.data) setMatches(matchRes.data);
+      if (feedRes.data) setFeed(feedRes.data);
+      if (lbRes.data) setLeaderboard(lbRes.data);
+      if (eventsRes?.data) setActiveEvents(eventsRes.data as CustomEvent[]);
       setLoading(false);
     }
     load();
@@ -75,7 +80,6 @@ export default function LandingPage() {
         <section className="relative px-4 py-14 sm:py-20 text-center overflow-hidden">
           {/* Background Elements */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-            {/* Kept clean as requested - boxes were distracting */}
           </div>
 
           <div className="relative stagger z-10">
@@ -98,19 +102,15 @@ export default function LandingPage() {
                   GO TO DASHBOARD <ArrowRight size={16} className="-mt-[2px]" />
                 </Link>
               ) : (
-                <>
-                  <Link href="/auth/signup" className="btn-pixel btn-green w-full sm:w-auto px-8 py-4 mb-2 flex items-center justify-center flex-wrap gap-2">
-                    CREATE FREE ACCOUNT <ArrowRight size={16} className="hidden sm:block -mt-[2px]" />
-                  </Link>
-                  <Link href="/auth/login" className="btn-pixel btn-ghost text-sm px-8 py-4 w-full sm:w-auto">
-                    LOGIN
-                  </Link>
-                </>
+                <Link href="/auth/signup" className="btn-pixel btn-green w-full sm:w-auto px-8 py-5 text-base sm:text-lg animate-pulse flex items-center justify-center gap-2">
+                  CLAIM 100 <AuraPoints size={20} /> FREE
+                </Link>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 mt-12 sm:mt-16 stagger">
+          {/* Social Proof */}
+          <div className="mt-12 flex items-center justify-center gap-4 sm:gap-6 flex-wrap opacity-60">
             <div className="flex items-center gap-2">
               <Lock className="text-pink-DEFAULT hidden sm:block" size={14} />
               <span className="text-faint text-xs">100% FREE TO PLAY</span>
@@ -129,17 +129,54 @@ export default function LandingPage() {
 
         <div className="pixel-divider mx-5" />
 
-        {/* Featured matches */}
-        <section className="px-5 py-20 max-w-7xl mx-auto w-full order-3 lg:order-none">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 sm:gap-0">
-            <div className="flex items-center gap-3">
-              <Zap size={16} className="text-yellow-DEFAULT shrink-0" />
-              <h2 className="text-white text-lg">UPCOMING MATCHES</h2>
+        {/* Live feed */}
+        <section className="px-5 py-10 max-w-7xl mx-auto w-full ">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="live-dot" />
+              <h2 className="text-white text-lg">LIVE PREDICTION FEED</h2>
             </div>
-            <div className="flex items-center gap-2 px-3 py-2 bg-pink-dim border-2 border-pink-DEFAULT self-start sm:self-auto">
-              <Lock size={11} className="text-pink-DEFAULT shrink-0" />
-              <span className="text-pink-DEFAULT text-xs">LOGIN TO BET</span>
+            <LiveFeed items={feed} />
+          </div>
+        </section>
+
+        <div className="pixel-divider mx-5 " />
+
+        {/* Limited Events Section */}
+        {activeEvents.length > 0 && (
+          <section className="px-5 py-12 max-w-7xl mx-auto w-full ">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-white text-lg flex items-center gap-2">
+                <Zap size={18} className="text-blue-DEFAULT" /> LIMITED EVENTS
+              </h2>
             </div>
+            
+            <div className="flex flex-col gap-6">
+               {activeEvents.map(event => (
+                 <div key={event.id} className="w-full">
+                   <CustomEventCard 
+                     event={event} 
+                     userVoteId={undefined}
+                     onVote={async () => {
+                       router.push("/auth/login");
+                       return false;
+                     }} 
+                   />
+                 </div>
+               ))}
+            </div>
+          </section>
+        )}
+
+        <div className="pixel-divider mx-5" />
+
+        {/* Upcoming Matches Section */}
+        <section className="px-5 py-12 max-w-7xl mx-auto w-full ">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-white text-lg">UPCOMING MATCHES</h2>
+            <Link href="/hub" className="text-green-DEFAULT text-xs hover:underline flex items-center gap-1">
+              WORLD CUP HUB <ArrowRight size={12} className="-mt-[2px]" />
+            </Link>
           </div>
 
           {matches.length === 0 ? (
@@ -179,86 +216,70 @@ export default function LandingPage() {
           )}
         </section>
 
+        <div className="pixel-divider mx-5 " />
 
-
-        {/* Live feed + Leaderboard */}
-        <section className="px-5 py-10 max-w-7xl mx-auto w-full order-2 lg:order-none">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-            {/* Live feed */}
-            <div>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="live-dot" />
-                <h2 className="text-white text-lg">LIVE PREDICTION FEED</h2>
+        {/* Leaderboard preview */}
+        <section className="px-5 py-10 max-w-7xl mx-auto w-full">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <Trophy size={16} className="text-yellow-DEFAULT" />
+                <h2 className="text-white text-lg">TOP PLAYERS</h2>
               </div>
-              <LiveFeed items={feed} />
+              <Link href="/leaderboard" className="text-green-DEFAULT text-xs hover:underline flex items-center gap-1">
+                VIEW ALL <ArrowRight size={12} className="-mt-[2px]" />
+              </Link>
             </div>
 
-            {/* Leaderboard preview */}
-            <div>
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <Trophy size={16} className="text-yellow-DEFAULT" />
-                  <h2 className="text-white text-lg">TOP PLAYERS</h2>
+            <div className="card p-0 overflow-hidden">
+              {leaderboard.length === 0 ? (
+                <div className="p-8 text-center">
+                  <p className="text-faint text-sm">NO PLAYERS YET</p>
+                  <p className="text-faint text-xs mt-2">BE THE FIRST TO JOIN</p>
                 </div>
-                <Link href="/leaderboard" className="text-green-DEFAULT text-xs hover:underline flex items-center gap-1">
-                  VIEW ALL <ArrowRight size={12} className="-mt-[2px]" />
-                </Link>
-              </div>
-
-              <div className="card p-0 overflow-hidden">
-                {leaderboard.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <p className="text-faint text-sm">NO PLAYERS YET</p>
-                    <p className="text-faint text-xs mt-2">BE THE FIRST TO JOIN</p>
-                  </div>
-                ) : (
-                  leaderboard.map((entry, i) => (
-                    <div
-                      key={entry.user_id}
-                      className="flex items-center gap-3 sm:gap-4 px-4 py-4 border-b-2 border-border last:border-b-0 hover:bg-surface2 transition-colors"
-                    >
-                      {/* Rank medal */}
-                      <div className={`w-8 sm:w-10 text-center text-sm sm:text-base font-bold flex-shrink-0 ${i === 0 ? "text-yellow-DEFAULT" : i === 1 ? "text-muted" : i === 2 ? "text-pink-DEFAULT" : "text-faint"
-                        }`}>
-                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${entry.rank}`}
-                      </div>
-
-                      {/* Avatar */}
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface2 border-2 border-border flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg">
-                        {entry.avatar_url ? (
-                          <Image src={entry.avatar_url} alt="Avatar" width={48} height={48} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-green-DEFAULT font-bold text-xs sm:text-sm">
-                            {entry.username?.slice(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Name */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm sm:text-base font-bold truncate">{entry.username?.toUpperCase()}</p>
-                      </div>
-
-                      {/* Balance — enlarged */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                        <span className="text-green-DEFAULT text-sm sm:text-base font-bold">{formatAura(entry.aura_balance)}</span>
-                        <AuraPoints size={20} className="sm:w-6 sm:h-6" />
-                      </div>
+              ) : (
+                leaderboard.map((entry, i) => (
+                  <div
+                    key={entry.user_id}
+                    className="flex items-center gap-3 sm:gap-4 px-4 py-4 border-b-2 border-border last:border-b-0 hover:bg-surface2 transition-colors"
+                  >
+                    {/* Rank medal */}
+                    <div className={`w-8 sm:w-10 text-center text-sm sm:text-base font-bold flex-shrink-0 ${i === 0 ? "text-yellow-DEFAULT" : i === 1 ? "text-muted" : i === 2 ? "text-pink-DEFAULT" : "text-faint"}`}>
+                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${entry.rank}`}
                     </div>
-                  ))
-                )}
-              </div>
+
+                    {/* Avatar */}
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface2 border-2 border-border flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg">
+                      {entry.avatar_url ? (
+                        <Image src={entry.avatar_url} alt="Avatar" width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-green-DEFAULT font-bold text-xs sm:text-sm">
+                          {entry.username?.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm sm:text-base font-bold truncate">{entry.username?.toUpperCase()}</p>
+                    </div>
+
+                    {/* Balance — enlarged */}
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                      <span className="text-green-DEFAULT text-sm sm:text-base font-bold">{formatAura(entry.aura_balance)}</span>
+                      <AuraPoints size={20} className="sm:w-6 sm:h-6" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </section>
 
-        <div className="pixel-divider mx-5 order-4 lg:order-none" />
-
         {/* Facebook Community Promo */}
-        <section className="px-5 py-12 max-w-7xl mx-auto w-full order-5 lg:order-none mt-10">
+        <section className="px-5 py-12 max-w-7xl mx-auto w-full  mt-10">
           <div className="card p-8 sm:p-12 border-[#0099ff]/50 bg-[#0099ff]/10 flex flex-col md:flex-row items-center justify-between gap-8 animate-slide-up hover:border-[#0099ff]"
-               style={{ boxShadow: "0 0 40px rgba(0,153,255,0.1)" }}>
+            style={{ boxShadow: "0 0 40px rgba(0,153,255,0.1)" }}>
             <div className="flex-1 text-center md:text-left">
               <div className="flex items-center justify-center md:justify-start gap-3 mb-4">
                 <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center -ml-2 border-2 border-[#0099ff]/50 bg-[#0099ff]/20">
@@ -280,7 +301,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <div className="pixel-divider mx-5 order-6 lg:order-none hidden sm:block" />
+        <div className="pixel-divider mx-5  hidden sm:block" />
 
         {/* CTA Section */}
         <section className="px-5 py-16 pb-28 md:pb-16 text-center order-7 lg:order-none">

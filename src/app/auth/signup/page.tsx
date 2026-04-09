@@ -27,12 +27,29 @@ export default function SignupPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({ email, password });
+
+    // Check for referral code in localStorage
+    const refCode = localStorage.getItem("ref_code");
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { ref_code: refCode || null }
+      }
+    });
+
     if (error) {
       setError(error.message);
       setLoading(false);
       return;
     }
+
+    // Store ref code to process after setup
+    if (refCode) {
+      localStorage.setItem("pending_ref_code", refCode);
+    }
+
     analytics.signUp("email");
     router.push("/auth/setup");
   }

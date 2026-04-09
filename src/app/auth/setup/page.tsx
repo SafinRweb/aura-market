@@ -56,7 +56,6 @@ export default function SetupPage() {
 
     let avatar_url = null;
 
-    // Upload avatar if provided
     if (avatarFile) {
       const ext = avatarFile.name.split(".").pop();
       const path = `${user.id}/avatar.${ext}`;
@@ -72,6 +71,47 @@ export default function SetupPage() {
       avatar_url = urlData.publicUrl;
     }
 
+    // Check for referral code
+    const refCode = localStorage.getItem("pending_ref_code");
+    let referrerId = null;
+    let startingBalance = 100;
+
+    if (refCode) {
+      const { data: referrer } = await supabase
+        .from("users")
+        .select("id, username, aura_balance, total_referrals")
+        .eq("referral_code", refCode)
+        .single();
+
+      if (referrer && referrer.id !== user.id) {
+        referrerId = referrer.id;
+        startingBalance = 150; // 100 base + 50 referral bonus
+
+        // Create referral record
+        await supabase.from("referrals").insert({
+          referrer_id: referrer.id,
+          referred_id: user.id,
+        });
+
+        // Update referrer's total referrals count
+        await supabase.from("users").update({
+          total_referrals: (referrer.total_referrals || 0) + 1,
+        }).eq("id", referrer.id);
+
+        // Notify referrer
+        await supabase.from("notifications").insert({
+          user_id: referrer.id,
+          type: "daily_reward",
+          message: `🎉 ${username.toLowerCase()} joined using your referral link!`,
+          aura_change: 0,
+        });
+
+        // Clear stored ref code
+        localStorage.removeItem("ref_code");
+        localStorage.removeItem("pending_ref_code");
+      }
+    }
+
     // Update user profile
     const { error: updateError } = await supabase
       .from("users")
@@ -79,8 +119,10 @@ export default function SetupPage() {
         id: user.id,
         username: username.toLowerCase(),
         avatar_url,
-        aura_balance: 0,
+        aura_balance: startingBalance,
+        referred_by: referrerId,
       });
+
     if (updateError) {
       setError(updateError.message);
       setLoading(false);

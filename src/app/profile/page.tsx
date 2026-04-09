@@ -7,7 +7,7 @@ import { formatAura, winRate, timeAgo, marketLabel } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import {
     TrendingUp, TrendingDown, Target, Zap,
-    Trophy, Flame, Star, Crown, Upload, LogOut
+    Trophy, Flame, Star, Crown, Upload, LogOut, Gift
 } from "lucide-react";
 import { MarketType } from "@/types";
 
@@ -184,6 +184,33 @@ export default function ProfilePage() {
                             <p className={`${stat.color} text-xs leading-normal`}>{stat.value}</p>
                         </div>
                     ))}
+                </div>
+
+                {/* Referrals CTA */}
+                <div
+                    onClick={() => router.push("/profile/referrals")}
+                    className="card p-4 mb-4 sm:mb-8 cursor-pointer card-hover border-2 border-green-DEFAULT bg-green-dim animate-slide-up"
+                    style={{boxShadow:"0 0 15px rgba(0,255,135,0.15)"}}
+                >
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Gift size={16} className="text-green-DEFAULT hidden sm:block" />
+                            <div>
+                                <p className="text-green-DEFAULT text-sm">REFERRAL PROGRAM</p>
+                                <p className="text-faint text-xs mt-1">
+                                    EARN 50 🤫 + 10% OF WINNINGS FOREVER
+                                </p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-green-DEFAULT text-sm">
+                                {(user as any)?.total_referrals || 0} REFERRALS
+                            </p>
+                            <p className="text-faint text-xs mt-1">
+                                {formatAura((user as any)?.referral_earnings || 0)} EARNED
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* ── Bet history ── */}
