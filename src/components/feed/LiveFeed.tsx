@@ -2,7 +2,7 @@
 import { LiveFeedItem } from "@/types";
 import { timeAgo } from "@/lib/utils";
 import Image from "next/image";
-import { AuraAmount } from "@/components/ui/AuraCoin";
+import { AuraAmount } from "@/components/ui/AuraPoints";
 
 export default function LiveFeed({ items }: { items: LiveFeedItem[] }) {
   if (items.length === 0) {

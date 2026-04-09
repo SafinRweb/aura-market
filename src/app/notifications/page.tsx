@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { Notification as AppNotification, User } from "@/types";
 import AppLayout from "@/components/layout/AppLayout";
@@ -19,8 +20,10 @@ export default function NotificationsPage() {
     const [pushEnabled, setPushEnabled] = useState(false);
     const [togglingPush, setTogglingPush] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<AppNotification | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         async function load() {
             const { data: { user: authUser } } = await supabase.auth.getUser();
             if (!authUser) { router.push("/auth/login"); return; }
@@ -293,8 +296,8 @@ export default function NotificationsPage() {
             </div>
 
             {/* Notification Modal */}
-            {selectedNotification && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-bg/80 backdrop-blur-sm animate-fade-in">
+            {selectedNotification && mounted && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center sm:p-4 bg-bg/80 backdrop-blur-sm animate-fade-in">
                     <div className="card w-full sm:max-w-sm p-6 border-t-2 sm:border-2 border-green-DEFAULT bg-surface animate-slide-up" 
                          style={{ boxShadow: "0 -5px 20px rgba(0,255,135,0.15)" }}>
                         <div className="flex items-center justify-between mb-4 border-b-2 border-border pb-4">
@@ -329,7 +332,7 @@ export default function NotificationsPage() {
                         </button>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </AppLayout>
     );
 }

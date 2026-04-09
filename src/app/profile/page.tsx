@@ -127,15 +127,6 @@ export default function ProfilePage() {
                                     <h1 className="neon-green text-base sm:text-xl truncate">
                                         {user?.username?.toUpperCase()}
                                     </h1>
-                                    {user?.leaderboard_rank === 1 && (
-                                        <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim mt-1 inline-block">AURA LORD</span>
-                                    )}
-                                    {user?.leaderboard_rank === 2 && (
-                                        <span className="badge text-muted border-muted bg-surface mt-1 inline-block">MOGGER</span>
-                                    )}
-                                    {user?.leaderboard_rank === 3 && (
-                                        <span className="badge text-yellow-DEFAULT border-yellow-DEFAULT bg-yellow-dim mt-1 inline-block">PATLA AURA</span>
-                                    )}
                                 </div>
 
                                 {/* Logout button — always visible */}

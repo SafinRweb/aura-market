@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { streakReward, STREAK_ROADMAP } from "@/lib/utils";
 import { analytics } from "@/lib/analytics";
-import AuraCoin, { AuraAmount } from "@/components/ui/AuraCoin";
+import AuraPoints, { AuraAmount } from "@/components/ui/AuraPoints";
 import { ArrowRight, CheckCircle, Lock, Flame, Trophy } from "lucide-react";
 
 interface Props {
@@ -17,6 +18,9 @@ export default function DailyStreakModal({ userId, currentStreak, onClose, onCla
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
   const [reward, setReward] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   // Today is day currentStreak + 1 in the cycle
   const todayStreak = currentStreak + 1;
@@ -78,9 +82,9 @@ export default function DailyStreakModal({ userId, currentStreak, onClose, onCla
     return "future";
   }
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.88)" }}
     >
       <div
@@ -145,7 +149,7 @@ export default function DailyStreakModal({ userId, currentStreak, onClose, onCla
                         {state === "past" ? (
                           <CheckCircle size={10} className="text-green-DEFAULT" />
                         ) : state === "today" ? (
-                          <AuraCoin size={14} />
+                          <AuraPoints size={14} />
                         ) : (
                           <Lock size={8} className="text-faint" />
                         )}
@@ -233,4 +237,7 @@ export default function DailyStreakModal({ userId, currentStreak, onClose, onCla
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 }

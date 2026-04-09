@@ -5,7 +5,7 @@ import { analytics } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import AuraCoin from "@/components/ui/AuraCoin";
+import AuraPoints from "@/components/ui/AuraPoints";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -129,7 +129,7 @@ export default function SignupPage() {
 
         {/* Starting bonus */}
         <div className="mt-6 border-2 border-green-dim bg-green-dim p-4 text-center">
-          <p className="text-green-DEFAULT text-xs flex items-center justify-center gap-1"><AuraCoin size={20} /> NEW PLAYERS GET 100 AURA FREE</p>
+          <p className="text-green-DEFAULT text-xs flex items-center justify-center gap-1"><AuraPoints size={20} /> NEW PLAYERS GET 100 AURA FREE</p>
         </div>
       </div>
     </div>

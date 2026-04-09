@@ -10,7 +10,7 @@ import WelcomeModal from "@/components/ui/WelcomeModal";
 import { winRate } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Zap, Users } from "lucide-react";
-import { AuraAmount } from "@/components/ui/AuraCoin";
+import { AuraAmount } from "@/components/ui/AuraPoints";
 
 export default function DashboardPage() {
   const router = useRouter();

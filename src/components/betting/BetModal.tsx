@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { Match, Pool } from "@/types";
 import { validateStake, formatAura, calcPayout, marketLabel } from "@/lib/utils";
@@ -28,6 +29,11 @@ export default function BetModal({
   const [stake, setStake] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Calculate pool totals
   const totalPool = pools
@@ -171,7 +177,7 @@ export default function BetModal({
     setLoading(false);
   }
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
       style={{ background: "rgba(0,0,0,0.85)" }}
@@ -320,4 +326,7 @@ export default function BetModal({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 }

@@ -1,16 +1,16 @@
 import Image from "next/image";
 import auraCoinImg from "@/assets/aura-coin.png";
 
-interface AuraCoinProps {
+interface AuraPointsProps {
   size?: number;
   className?: string;
 }
 
 /**
- * Inline Aura Coin icon — replaces the 🤫 emoji everywhere.
- * Usage: <AuraCoin /> or <AuraCoin size={24} />
+ * Inline Aura Points icon — replaces the 🤫 emoji everywhere.
+ * Usage: <AuraPoints /> or <AuraPoints size={24} />
  */
-export default function AuraCoin({ size = 22, className = "" }: AuraCoinProps) {
+export default function AuraPoints({ size = 22, className = "" }: AuraPointsProps) {
   return (
     <Image
       src={auraCoinImg}
@@ -32,14 +32,14 @@ interface AuraAmountProps {
 }
 
 /**
- * Displays an aura amount with the coin icon inline.
+ * Displays an aura amount with the points icon inline.
  * Usage: <AuraAmount amount={100} /> → "100 🪙"
  */
 export function AuraAmount({ amount, size = 22, className = "", prefix = "" }: AuraAmountProps) {
   return (
     <span className={`inline-flex items-center gap-1.5 ${className}`}>
       <span>{prefix}{amount.toLocaleString()}</span>
-      <AuraCoin size={size} />
+      <AuraPoints size={size} />
     </span>
   );
 }

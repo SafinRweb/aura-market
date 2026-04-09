@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
-import AuraCoin, { AuraAmount } from "@/components/ui/AuraCoin";
+import AuraPoints, { AuraAmount } from "@/components/ui/AuraPoints";
 import { ArrowRight, Zap, Target, Trophy } from "lucide-react";
 
 interface Props {
@@ -18,6 +19,9 @@ const PERKS = [
 export default function WelcomeModal({ userId, onClaimed }: Props) {
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   async function handleClaim() {
     setClaiming(true);
@@ -51,9 +55,9 @@ export default function WelcomeModal({ userId, onClaimed }: Props) {
     setClaiming(false);
   }
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[120] flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.92)" }}
     >
       <div
@@ -68,14 +72,14 @@ export default function WelcomeModal({ userId, onClaimed }: Props) {
             borderBottom: "2px solid rgba(0,255,135,0.2)",
           }}
         >
-          {/* Animated coin */}
+          {/* Animated point */}
           <div className="flex justify-center mb-3">
             <div className="relative">
               <div
                 className="absolute inset-0 rounded-full animate-pulse"
                 style={{ background: "radial-gradient(circle, rgba(0,255,135,0.4) 0%, transparent 70%)", transform: "scale(2)" }}
               />
-              <AuraCoin size={64} />
+              <AuraPoints size={64} />
             </div>
           </div>
           <p className="text-faint text-xs mb-1 tracking-widest">WELCOME TO</p>
@@ -164,4 +168,7 @@ export default function WelcomeModal({ userId, onClaimed }: Props) {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 }

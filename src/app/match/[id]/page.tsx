@@ -13,7 +13,6 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap, ExternalLink } from "lucide-react";
 import Flag from "@/components/ui/Flag";
 import Image from "next/image";
-import flsTvLogo from "@/assets/flstv.png";
 
 const MARKETS: { type: MarketType; options: { label: string; value: string }[] }[] = [
   {
@@ -369,18 +368,18 @@ export default function MatchPage() {
               )}
             />
 
-            {/* Live TV Promo */}
-            <div className="mt-4 sm:mt-6 glass-panel border border-green-DEFAULT/30 p-4 sm:p-5 text-center group cursor-pointer hover:border-green-DEFAULT transition-colors"
-                 onClick={() => window.open('https://flstv.vercel.app', '_blank')}
+            {/* Facebook Community Promo */}
+            <div className="mt-4 sm:mt-6 glass-panel border border-[#0099ff]/40 p-4 sm:p-5 text-center group cursor-pointer hover:border-[#0099ff] transition-colors bg-[#0099ff]/5"
+                 onClick={() => window.open('#', '_blank')}
             >
               <div className="w-16 h-16 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
-                <Image src={flsTvLogo} alt="FLS TV Logo" width={64} height={64} className="object-contain drop-shadow-[0_0_15px_rgba(0,255,135,0.5)]" />
+                <Users size={36} className="text-[#0099ff] drop-shadow-[0_0_10px_rgba(0,153,255,0.6)]" />
               </div>
               <p className="text-faint text-2xs sm:text-xs mb-3 leading-relaxed">
-                Catch all the action live on Football Live TV!
+                Join our Facebook Community to discuss predictions with other players!
               </p>
-              <button className="btn-pixel btn-green w-full text-2xs sm:text-xs py-2 flex items-center justify-center gap-2">
-                OPEN FLS TV <ExternalLink size={12} className="-mt-[1px]" />
+              <button className="btn-pixel w-full text-2xs sm:text-xs py-2 flex items-center justify-center gap-2 bg-[#0099ff]/20 text-[#0099ff] border-2 border-[#0099ff] hover:bg-[#0099ff] hover:text-white transition-colors">
+                JOIN COMMUNITY <ExternalLink size={12} className="-mt-[1px]" />
               </button>
             </div>
           </div>

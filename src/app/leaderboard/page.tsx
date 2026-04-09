@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { LeaderboardEntry } from "@/types";
-import { winRate, rankBadge } from "@/lib/utils";
+import { winRate } from "@/lib/utils";
 import { Crown, Trophy } from "lucide-react";
-import AuraCoin, { AuraAmount } from "@/components/ui/AuraCoin";
+import AuraPoints, { AuraAmount } from "@/components/ui/AuraPoints";
 
 const EMOJI_STYLE: React.CSSProperties = {
   lineHeight: 1,
@@ -87,7 +87,7 @@ export default function LeaderboardPage() {
                   return (
                     <div key={pos} className="flex flex-col items-center gap-1.5 flex-1 max-w-[110px]">
                       {pos === 0 && (
-                        <span className="emoji text-3xl animate-float mb-1" style={EMOJI_STYLE}><AuraCoin size={60} /></span>
+                        <span className="emoji text-3xl animate-float mb-1" style={EMOJI_STYLE}><AuraPoints size={60} /></span>
                       )}
 
                       {/* Avatar */}
@@ -150,11 +150,6 @@ export default function LeaderboardPage() {
                   <span className="neon-green text-xs block mb-1">YOUR RANKING</span>
                   <div className="flex items-center gap-2">
                     <span className="text-white text-base">#{myRank.rank}</span>
-                    {rankBadge(Number(myRank.rank)) && (
-                      <span className="text-yellow-DEFAULT px-2 border border-yellow-DEFAULT/30 bg-yellow-DEFAULT/10" style={{ fontSize: "8px" }}>
-                        {rankBadge(Number(myRank.rank))}
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
@@ -254,11 +249,6 @@ export default function LeaderboardPage() {
                         <p className={`text-xs truncate ${isMe ? "text-green-DEFAULT" : mc ? mc.text : "text-white"}`}>
                           {entry.username?.toUpperCase()}
                         </p>
-                        {rankBadge(rank) && (
-                          <p className="text-yellow-DEFAULT mt-0.5 opacity-80" style={{ fontSize: "7px" }}>
-                            {rankBadge(rank)}
-                          </p>
-                        )}
                       </div>
                     </div>
 

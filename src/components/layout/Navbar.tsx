@@ -7,7 +7,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Trophy, Globe, LayoutDashboard, LogOut, Menu, X } from "lucide-react";
 import Image from "next/image";
-import AuraCoin from "@/components/ui/AuraCoin";
+import AuraPoints from "@/components/ui/AuraPoints";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -129,7 +129,7 @@ export default function Navbar() {
               <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-green-dim border-2 border-green-DEFAULT animate-glow-pulse">
                 <span className="text-green-DEFAULT text-sm inline-flex items-center gap-1.5">
                   {formatAura(user.aura_balance)}
-                  <AuraCoin size={24} />
+                  <AuraPoints size={24} />
                 </span>
               </div>
 

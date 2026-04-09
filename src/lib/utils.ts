@@ -83,7 +83,7 @@ export function generateSeedPools(
   };
 }
 
-// Format aura amount (number only — pair with <AuraCoin /> for the icon)
+// Format aura amount (number only — pair with <AuraPoints /> for the icon)
 export function formatAura(amount: number): string {
   return amount.toLocaleString();
 }
@@ -174,12 +174,4 @@ export function truncate(str: string, n: number): string {
 export function winRate(wins: number, total: number): string {
   if (total === 0) return "0%";
   return `${Math.round((wins / total) * 100)}%`;
-}
-
-// Rank badge label
-export function rankBadge(rank: number): string | null {
-  if (rank === 1) return "AURA GOD";
-  if (rank === 2) return "AURA LORD";
-  if (rank === 3) return "AURA KING";
-  return null;
 }
