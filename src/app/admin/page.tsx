@@ -2,10 +2,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { formatAura } from "@/lib/utils";
-import { CustomEvent, CustomEventOption } from "@/types";
+import { CustomEvent } from "@/types";
 import {
     Users, Zap, TrendingUp,
-    Activity, RefreshCw, AlertCircle, CheckCircle, Trash2
+    Activity, RefreshCw, CheckCircle, Trash2
 } from "lucide-react";
 
 interface Stats {

@@ -12,7 +12,7 @@ import { formatKickoff, isMatchBettable } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Calendar, TrendingUp, Users, Zap, ExternalLink } from "lucide-react";
 import Flag from "@/components/ui/Flag";
-import Image from "next/image";
+
 
 const MARKETS: { type: MarketType; options: { label: string; value: string }[] }[] = [
   {

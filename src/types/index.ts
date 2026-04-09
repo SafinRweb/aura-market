@@ -14,6 +14,9 @@ export interface User {
   leaderboard_rank: number;
   push_enabled: boolean;
   fcm_token: string | null;
+  referral_code?: string;
+  referral_earnings?: number;
+  total_referrals?: number;
   created_at: string;
 }
 

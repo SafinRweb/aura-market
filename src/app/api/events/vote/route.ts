@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, rewarded });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Event vote error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

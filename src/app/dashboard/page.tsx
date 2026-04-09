@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { Zap, Users, Target } from "lucide-react";
 import { AuraAmount } from "@/components/ui/AuraPoints";
 import CustomEventCard from "@/components/events/CustomEventCard";
-import { CustomEvent, CustomEventVote } from "@/types";
+import { CustomEvent } from "@/types";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -77,10 +77,11 @@ export default function DashboardPage() {
       setMatches(matchData || []);
 
       // Load live feed
-      const { data: feed } = await supabase
+      const { data: feedData } = await supabase
         .from("live_feed")
         .select("*")
         .limit(30);
+      if (feedData) setFeedItems(feedData);
 
       // Load custom events
       const { data: eventsData } = await supabase

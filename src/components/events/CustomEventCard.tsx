@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { CustomEvent, CustomEventOption } from "@/types";
+import { CustomEvent } from "@/types";
 import { Zap, CheckCircle } from "lucide-react";
 
 interface Props {

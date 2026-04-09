@@ -1,11 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Gift, Zap, ArrowRight } from "lucide-react";
+import { Gift, Zap } from "lucide-react";
 import Link from "next/link";
 
-export default function JoinPage() {
+function JoinContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const refCode = searchParams.get("ref");
@@ -139,5 +139,13 @@ export default function JoinPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function JoinPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-bg flex items-center justify-center"><p className="neon-green text-sm animate-pulse">LOADING...</p></div>}>
+            <JoinContent />
+        </Suspense>
     );
 }

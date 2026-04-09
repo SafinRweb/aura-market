@@ -91,7 +91,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, totalRewarded, winners: totalRewarded / (event.reward_amount || 1) });
-  } catch (err: any) {
+  } catch (err) {
     console.error("Event resolve error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

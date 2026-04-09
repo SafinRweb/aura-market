@@ -63,8 +63,9 @@ export async function POST(req: Request) {
     if (optionsError) throw optionsError;
 
     return NextResponse.json({ success: true, event });
-  } catch (err: any) {
-    console.error("Event creation error:", err);
-    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
+  } catch (err) {
+    const e = err as Error;
+    console.error("Event creation error:", e);
+    return NextResponse.json({ error: e.message || "Internal server error" }, { status: 500 });
   }
 }

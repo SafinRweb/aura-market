@@ -31,7 +31,7 @@ export default function SignupPage() {
     // Check for referral code in localStorage
     const refCode = localStorage.getItem("ref_code");
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {

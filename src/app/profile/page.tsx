@@ -204,10 +204,10 @@ export default function ProfilePage() {
                         </div>
                         <div className="text-right">
                             <p className="text-green-DEFAULT text-sm">
-                                {(user as any)?.total_referrals || 0} REFERRALS
+                                {user?.total_referrals || 0} REFERRALS
                             </p>
                             <p className="text-faint text-xs mt-1">
-                                {formatAura((user as any)?.referral_earnings || 0)} EARNED
+                                {formatAura(user?.referral_earnings || 0)} EARNED
                             </p>
                         </div>
                     </div>

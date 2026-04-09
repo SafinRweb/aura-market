@@ -5,6 +5,7 @@ import AppLayout from "@/components/layout/AppLayout";
 import { formatAura, timeAgo } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Gift, Copy, Check, Users, TrendingUp } from "lucide-react";
+import { User } from "@/types";
 
 interface Referral {
     id: string;
@@ -17,7 +18,7 @@ interface Referral {
 
 export default function ReferralsPage() {
     const router = useRouter();
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [referrals, setReferrals] = useState<Referral[]>([]);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -52,7 +53,6 @@ export default function ReferralsPage() {
         setTimeout(() => setCopied(false), 2000);
     }
 
-    const totalEarned = referrals.reduce((sum, r) => sum + r.total_commission, 0);
     const activeReferrals = referrals.filter(r => r.users?.total_bets > 0).length;
 
     if (loading) return (
