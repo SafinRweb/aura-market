@@ -2,13 +2,11 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { analytics } from "@/lib/analytics";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import AuraPoints from "@/components/ui/AuraPoints";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
