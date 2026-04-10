@@ -51,7 +51,7 @@ export default function SignupPage() {
     }
 
     analytics.signUp("email");
-    router.push("/auth/setup");
+    window.location.href = "/auth/setup";
   }
 
   async function handleGoogle() {

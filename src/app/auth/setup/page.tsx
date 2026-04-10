@@ -77,38 +77,25 @@ export default function SetupPage() {
     let startingBalance = 100;
 
     if (refCode) {
-      const { data: referrer } = await supabase
-        .from("users")
-        .select("id, username, aura_balance, total_referrals")
-        .eq("referral_code", refCode)
-        .single();
-
-      if (referrer && referrer.id !== user.id) {
-        referrerId = referrer.id;
-        startingBalance = 150; // 100 base + 50 referral bonus
-
-        // Create referral record
-        await supabase.from("referrals").insert({
-          referrer_id: referrer.id,
-          referred_id: user.id,
+      try {
+        const res = await fetch("/api/auth/referral", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refCode, newUserId: user.id, username: username.toLowerCase() })
         });
-
-        // Update referrer's total referrals count
-        await supabase.from("users").update({
-          total_referrals: (referrer.total_referrals || 0) + 1,
-        }).eq("id", referrer.id);
-
-        // Notify referrer
-        await supabase.from("notifications").insert({
-          user_id: referrer.id,
-          type: "daily_reward",
-          message: `🎉 ${username.toLowerCase()} joined using your referral link!`,
-          aura_change: 0,
-        });
-
-        // Clear stored ref code
-        localStorage.removeItem("ref_code");
-        localStorage.removeItem("pending_ref_code");
+        
+        if (res.ok) {
+          const result = await res.json();
+          if (result.success) {
+            referrerId = result.referrerId;
+            startingBalance = result.startingBalance;
+            // Clear stored ref code
+            localStorage.removeItem("ref_code");
+            localStorage.removeItem("pending_ref_code");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to process referral", err);
       }
     }
 
@@ -130,7 +117,7 @@ export default function SetupPage() {
     }
 
     analytics.profileSetup();
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   }
 
   return (

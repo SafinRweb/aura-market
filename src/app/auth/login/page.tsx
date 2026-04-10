@@ -24,7 +24,7 @@ export default function LoginPage() {
       return;
     }
     analytics.login("email");
-    router.push("/dashboard");
+    window.location.href = "/dashboard";
   }
 
   async function handleGoogle() {

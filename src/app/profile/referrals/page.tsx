@@ -6,6 +6,7 @@ import { formatAura, timeAgo } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Gift, Copy, Check, Users, TrendingUp } from "lucide-react";
 import { User } from "@/types";
+import { AuraAmount } from "@/components/ui/AuraPoints";
 
 interface Referral {
     id: string;
@@ -68,29 +69,31 @@ export default function ReferralsPage() {
             <div className="max-w-3xl mx-auto px-4 py-8">
 
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-8 animate-slide-up">
-                    <Gift size={18} className="text-green-DEFAULT" />
-                    <div>
-                        <h1 className="neon-green text-xl">REFERRALS</h1>
-                        <p className="text-faint text-xs mt-1">
-                            EARN 50 🤫 PER REFERRAL + 10% OF THEIR WINNINGS FOREVER
+                <div className="flex items-start sm:items-center gap-3 mb-6 sm:mb-8 animate-slide-up">
+                    <div className="w-10 h-10 flex-shrink-0 border-2 border-green-DEFAULT bg-green-dim flex items-center justify-center mt-1 sm:mt-0">
+                        <Gift size={18} className="text-green-DEFAULT" />
+                    </div>
+                    <div className="min-w-0">
+                        <h1 className="neon-green text-xl sm:text-2xl">REFERRALS</h1>
+                        <p className="text-faint text-[11px] sm:text-xs flex flex-wrap items-center mt-1 sm:mt-1.5 gap-x-1 leading-relaxed">
+                            EARN <AuraAmount amount={50} size={14} className="shrink-0" /> PER REFERRAL + 10% OF THEIR WINNINGS FOREVER
                         </p>
                     </div>
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-8 stagger">
-                    <div className="card p-4 border-2 border-green-DEFAULT bg-green-dim">
-                        <p className="text-faint text-xs mb-2">TOTAL EARNED</p>
-                        <p className="neon-green text-lg">{formatAura(user?.referral_earnings || 0)}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-6 sm:mb-8 stagger">
+                    <div className="card p-3 sm:p-4 border-2 border-green-DEFAULT bg-green-dim col-span-2 sm:col-span-1">
+                        <p className="text-green-DEFAULT text-[10px] sm:text-xs mb-1 sm:mb-2">TOTAL EARNED</p>
+                        <p className="neon-green text-lg sm:text-xl"><AuraAmount amount={user?.referral_earnings || 0} size={22} /></p>
                     </div>
-                    <div className="card p-4 border-2 border-blue-DEFAULT bg-blue-dim">
-                        <p className="text-faint text-xs mb-2">TOTAL REFERRALS</p>
-                        <p className="text-blue-DEFAULT text-lg">{referrals.length}</p>
+                    <div className="card p-3 sm:p-4 border-2 border-blue-DEFAULT bg-blue-dim">
+                        <p className="text-blue-DEFAULT text-[10px] sm:text-xs mb-1 sm:mb-2">INVITES</p>
+                        <p className="text-white text-lg sm:text-xl">{referrals.length}</p>
                     </div>
-                    <div className="card p-4 border-2 border-yellow-DEFAULT bg-yellow-dim">
-                        <p className="text-faint text-xs mb-2">ACTIVE BETTORS</p>
-                        <p className="text-yellow-DEFAULT text-lg">{activeReferrals}</p>
+                    <div className="card p-3 sm:p-4 border-2 border-yellow-DEFAULT bg-yellow-dim">
+                        <p className="text-yellow-DEFAULT text-[10px] sm:text-xs mb-1 sm:mb-2">ACTIVE</p>
+                        <p className="text-white text-lg sm:text-xl">{activeReferrals}</p>
                     </div>
                 </div>
 
@@ -120,19 +123,19 @@ export default function ReferralsPage() {
                     </div>
 
                     {/* How it works */}
-                    <div className="mt-4 pt-4 border-t-2 border-border">
-                        <p className="text-faint text-xs mb-3">HOW IT WORKS</p>
-                        <div className="grid grid-cols-3 gap-3">
+                    <div className="mt-6 pt-5 border-t-2 border-border">
+                        <p className="text-faint text-xs mb-4">HOW IT WORKS</p>
+                        <div className="flex flex-col sm:grid sm:grid-cols-3 gap-3">
                             {[
                                 { step: "1", text: "Share your link" },
-                                { step: "2", text: "Friend signs up & gets 50 🤫 bonus" },
-                                { step: "3", text: "You earn 50 🤫 + 10% of their wins forever" },
+                                { step: "2", text: "Friend signs up & gets 50 AURA bonus" },
+                                { step: "3", text: "You earn 50 AURA + 10% of their wins forever" },
                             ].map(s => (
-                                <div key={s.step} className="text-center">
-                                    <div className="w-8 h-8 border-2 border-green-DEFAULT bg-green-dim flex items-center justify-center mx-auto mb-2">
+                                <div key={s.step} className="flex sm:block items-center gap-3 sm:gap-0 sm:text-center bg-surface2 sm:bg-transparent p-3 sm:p-0">
+                                    <div className="w-8 h-8 flex-shrink-0 border-2 border-green-DEFAULT bg-green-dim flex items-center justify-center sm:mx-auto sm:mb-3">
                                         <span className="text-green-DEFAULT text-sm">{s.step}</span>
                                     </div>
-                                    <p className="text-faint text-xs leading-relaxed">{s.text}</p>
+                                    <p className="text-white sm:text-faint text-[11px] sm:text-xs leading-relaxed text-left sm:text-center w-full">{s.text}</p>
                                 </div>
                             ))}
                         </div>

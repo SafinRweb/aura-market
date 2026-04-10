@@ -7,6 +7,7 @@ import { validateStake, formatAura, calcPayout, marketLabel } from "@/lib/utils"
 import { analytics } from "@/lib/analytics";
 import { X, AlertTriangle, ArrowRight, TrendingUp, Target } from "lucide-react";
 import { MarketType } from "@/types";
+import { AuraAmount } from "@/components/ui/AuraPoints";
 
 interface Props {
   match: Match;
@@ -247,7 +248,7 @@ export default function BetModal({
               value={stake}
               onChange={e => handleStakeChange(e.target.value)}
               onBlur={() => setStake(String(parseInt(stake) || ""))}
-              placeholder="MIN 5 🤫"
+              placeholder="MIN 5 AURA"
               min={5}
               step={1}
               className="pixel-input text-xs sm:text-sm"
@@ -313,7 +314,7 @@ export default function BetModal({
               "PLACING PREDICTION..."
             ) : (
               <span className="flex items-center gap-2">
-                LOCK IN {stake ? formatAura(parseInt(stake)) : "🤫"}
+                LOCK IN {stake ? <AuraAmount amount={parseInt(stake)} size={14} /> : "AURA"}
                 <ArrowRight size={14} className="-mt-[1px]" />
               </span>
             )}

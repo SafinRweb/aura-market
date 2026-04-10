@@ -163,7 +163,7 @@ def void_bet(bet: dict):
     send_notification(
         user_id=bet["user_id"],
         notif_type="bet_void",
-        message=f"Bet voided — stake refunded · {bet['stake']} 🤫",
+        message=f"Bet voided — stake refunded · {bet['stake']} AURA",
         aura_change=0,
     )
 def pay_referral_commission(user_id: str, profit: int):
@@ -221,7 +221,7 @@ def pay_referral_commission(user_id: str, profit: int):
         send_notification(
             user_id=referrer_id,
             notif_type="bet_won",
-            message=f"💸 {referred_username} won a bet — you earned {commission} 🤫 commission!",
+            message=f"💸 {referred_username} won a bet — you earned {commission} AURA commission!",
             aura_change=commission,
         )
 
@@ -244,7 +244,7 @@ def pay_first_bet_bonus(user_id: str, referrer_id: str):
         if not ref_res.data or ref_res.data["first_bet_bonus_paid"]:
             return
 
-        # Pay 50 🤫 bonus to referrer
+        # Pay 50 AURA bonus to referrer
         referrer_res = supabase.table("users")\
             .select("aura_balance, referral_earnings")\
             .eq("id", referrer_id)\
@@ -279,7 +279,7 @@ def pay_first_bet_bonus(user_id: str, referrer_id: str):
         send_notification(
             user_id=referrer_id,
             notif_type="daily_reward",
-            message=f"🎉 {username} placed their first bet! You earned 50 🤫 bonus!",
+            message=f"🎉 {username} placed their first bet! You earned 50 AURA bonus!",
             aura_change=50,
         )
 
@@ -349,7 +349,7 @@ def accountant(match_id: str):
                     send_notification(
                         user_id=bet["user_id"],
                         notif_type="bet_won",
-                        message=f"You won! {home} vs {away} · +{payout} 🤫",
+                        message=f"You won! {home} vs {away} · +{payout} AURA",
                         aura_change=profit,
                     )
                     log.info(f"Paid {payout} to {bet['user_id']}")
@@ -380,7 +380,7 @@ def accountant(match_id: str):
                 send_notification(
                     user_id=bet["user_id"],
                     notif_type="bet_lost",
-                    message=f"Unlucky! {home} vs {away} · -{bet['stake']} 🤫",
+                    message=f"Unlucky! {home} vs {away} · -{bet['stake']} AURA",
                     aura_change=-bet["stake"],
                 )
         log.info(f"✅ Accountant done for {home} vs {away}")
@@ -463,7 +463,7 @@ def send_notification(user_id, notif_type, message, aura_change):
 
 
 if __name__ == "__main__":
-    log.info("🤫 Aura Market Worker — single run")
+    log.info("AURA Aura Market Worker — single run")
     heartbeat()
     warden()
     fetcher()

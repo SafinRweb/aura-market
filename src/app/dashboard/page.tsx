@@ -192,9 +192,9 @@ export default function DashboardPage() {
               {winRate(user?.win_count || 0, user?.total_bets || 0)}
             </p>
           </div>
-          <div className="card p-3 sm:p-4">
-            <p className="text-faint text-xs mb-1 sm:mb-2">TOTAL PREDICTIONS</p>
-            <p className="text-blue-DEFAULT text-base sm:text-lg">{user?.total_bets || 0}</p>
+          <div className="card p-3 sm:p-4 cursor-pointer card-hover border-2 border-transparent hover:border-green-DEFAULT/30 transition-all" onClick={() => router.push("/profile/referrals")}>
+            <p className="text-faint text-xs mb-1 sm:mb-2 flex items-center gap-1"><Users size={10} /> REFERRALS</p>
+            <p className="text-green-DEFAULT text-base sm:text-lg">{user?.total_referrals || 0}</p>
           </div>
           <div className="card p-3 sm:p-4">
             <p className="text-faint text-xs mb-1 sm:mb-2">STREAK</p>

@@ -75,7 +75,7 @@ export default function AdminBetsPage() {
                 await supabase.from("notifications").insert({
                     user_id: bet.user_id,
                     type: "bet_won",
-                    message: `Admin settled your bet — You won ${payout} 🤫`,
+                    message: `Admin settled your bet — You won ${payout} AURA`,
                     aura_change: profit,
                 });
             }
@@ -115,7 +115,7 @@ export default function AdminBetsPage() {
             await supabase.from("notifications").insert({
                 user_id: bet.user_id,
                 type: "bet_void",
-                message: `Your bet was voided — ${bet.stake} 🤫 refunded`,
+                message: `Your bet was voided — ${bet.stake} AURA refunded`,
                 aura_change: 0,
             });
         }

@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Gift, Zap } from "lucide-react";
 import Link from "next/link";
+import AuraPoints from "@/components/ui/AuraPoints";
 
 function JoinContent() {
     const router = useRouter();
@@ -69,14 +70,14 @@ function JoinContent() {
                         <p className="text-faint text-xs leading-loose">
                             SIGN UP NOW AND GET
                         </p>
-                        <p className="neon-green text-xl my-2">+50 🤫 FREE</p>
+                        <p className="neon-green text-xl my-2 flex items-center justify-center">+50 <AuraPoints size={20} className="mx-1.5" /> FREE</p>
                         <p className="text-faint text-xs">ADDED TO YOUR STARTING BALANCE</p>
                     </div>
                 ) : (
                     <div className="bg-green-dim border-2 border-green-DEFAULT p-4 mb-6 text-center">
-                        <p className="text-green-DEFAULT text-xs">
-                            🤫 JOIN FREE — GET 100 AURA ON SIGNUP
-                        </p>
+                        <div className="text-green-DEFAULT text-xs flex items-center justify-center gap-1.5">
+                            <AuraPoints size={14} /> JOIN FREE — GET 100 AURA ON SIGNUP
+                        </div>
                     </div>
                 )}
 
@@ -86,7 +87,7 @@ function JoinContent() {
                     <div className="space-y-3">
                         {[
                             {
-                                icon: "🤫",
+                                icon: <AuraPoints size={20} />,
                                 title: referrer ? "150 AURA ON SIGNUP" : "100 AURA ON SIGNUP",
                                 desc: referrer ? "100 base + 50 referral bonus" : "Free starting balance",
                             },
@@ -124,7 +125,7 @@ function JoinContent() {
                         className="btn-pixel btn-green w-full flex items-center justify-center gap-2 text-sm py-4"
                     >
                         <Zap size={14} />
-                        {referrer ? "CLAIM YOUR 150 🤫 AND JOIN →" : "JOIN FREE — GET 100 🤫 →"}
+                        {referrer ? <span className="flex items-center gap-1.5">CLAIM YOUR 150 <AuraPoints size={14} /> AND JOIN →</span> : <span className="flex items-center gap-1.5">JOIN FREE — GET 100 <AuraPoints size={14} /> →</span>}
                     </Link>
                     <Link
                         href="/auth/login"

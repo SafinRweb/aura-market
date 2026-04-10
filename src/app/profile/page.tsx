@@ -10,6 +10,7 @@ import {
     Trophy, Flame, Star, Crown, Upload, LogOut, Gift
 } from "lucide-react";
 import { MarketType } from "@/types";
+import { AuraAmount } from "@/components/ui/AuraPoints";
 
 interface BetWithMatch extends Bet {
     match: Match;
@@ -147,29 +148,29 @@ export default function ProfilePage() {
                             </p>
 
                             {/* Win / loss row */}
-                            <div className="flex items-center gap-3 flex-wrap">
-                                <span className="text-white text-xs">
+                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                <span className="text-white text-sm">
                                     {user?.win_count || 0}
-                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>W</span>
+                                    <span className="text-faint ml-1 text-[10px]">W</span>
                                 </span>
-                                <span className="text-faint text-xs">·</span>
-                                <span className="text-white text-xs">
+                                <span className="text-faint text-sm">·</span>
+                                <span className="text-white text-sm">
                                     {user?.loss_count || 0}
-                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>L</span>
+                                    <span className="text-faint ml-1 text-[10px]">L</span>
                                 </span>
-                                <span className="text-faint text-xs">·</span>
-                                <span className="text-green-DEFAULT text-xs">
+                                <span className="text-faint text-sm">·</span>
+                                <span className="text-yellow-DEFAULT text-sm">
                                     {winRate(user?.win_count || 0, user?.total_bets || 0)}
-                                    <span className="text-faint ml-1" style={{ fontSize: "8px" }}>WR</span>
+                                    <span className="text-faint ml-1 text-[10px]">WR</span>
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     {/* Balance highlight strip */}
-                    <div className="mt-4 pt-4 border-t-2 border-border flex items-center justify-between">
-                        <p className="text-faint text-xs">CURRENT BALANCE</p>
-                        <p className="neon-green text-xl">{formatAura(user?.aura_balance || 0)}</p>
+                    <div className="mt-5 pt-4 border-t-2 border-border flex items-center justify-between">
+                        <p className="text-faint text-sm">CURRENT BALANCE</p>
+                        <p className="neon-green text-xl"><AuraAmount amount={user?.aura_balance || 0} size={24} /></p>
                     </div>
                 </div>
 
@@ -189,26 +190,29 @@ export default function ProfilePage() {
                 {/* Referrals CTA */}
                 <div
                     onClick={() => router.push("/profile/referrals")}
-                    className="card p-4 mb-4 sm:mb-8 cursor-pointer card-hover border-2 border-green-DEFAULT bg-green-dim animate-slide-up"
-                    style={{boxShadow:"0 0 15px rgba(0,255,135,0.15)"}}
+                    className="card p-4 sm:p-5 mb-4 sm:mb-8 cursor-pointer card-hover border-2 border-green-DEFAULT bg-green-dim flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-slide-up"
+                    style={{boxShadow:"0 0 20px rgba(0,255,135,0.15)"}}
                 >
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Gift size={16} className="text-green-DEFAULT hidden sm:block" />
-                            <div>
-                                <p className="text-green-DEFAULT text-sm">REFERRAL PROGRAM</p>
-                                <p className="text-faint text-xs mt-1">
-                                    EARN 50 🤫 + 10% OF WINNINGS FOREVER
-                                </p>
-                            </div>
+                    <div className="flex items-start sm:items-center gap-3 w-full sm:w-auto">
+                        <div className="w-10 h-10 border-2 border-green-DEFAULT bg-green-dim/50 flex items-center justify-center flex-shrink-0">
+                            <Gift size={18} className="text-green-DEFAULT" />
+                        </div>
+                        <div className="min-w-0">
+                            <h3 className="neon-green text-sm sm:text-base">REFERRAL PROGRAM</h3>
+                            <p className="text-faint text-[10px] sm:text-xs mt-1 flex items-center flex-wrap gap-x-1">
+                                EARN <AuraAmount amount={50} size={12} className="shrink-0" /> + 10% OF WINNINGS
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex sm:flex-col justify-between sm:justify-center items-center sm:items-end w-full sm:w-auto border-t-2 border-green-DEFAULT/20 sm:border-none pt-3 sm:pt-0">
+                        <div className="text-left sm:text-right">
+                            <p className="text-faint text-[10px] sm:text-xs mb-0.5">INVITES</p>
+                            <p className="text-white text-sm sm:text-base">{user?.total_referrals || 0}</p>
                         </div>
                         <div className="text-right">
-                            <p className="text-green-DEFAULT text-sm">
-                                {user?.total_referrals || 0} REFERRALS
-                            </p>
-                            <p className="text-faint text-xs mt-1">
-                                {formatAura(user?.referral_earnings || 0)} EARNED
-                            </p>
+                            <p className="text-green-DEFAULT text-[10px] sm:text-xs mb-0.5">EARNED</p>
+                            <p className="text-green-DEFAULT text-sm sm:text-base"><AuraAmount amount={user?.referral_earnings || 0} size={16} /></p>
                         </div>
                     </div>
                 </div>

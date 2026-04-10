@@ -132,7 +132,7 @@ export default function MatchPage() {
 
   async function handleBetSuccess(stake: number) {
     setModalState(null);
-    setBetSuccess(`BET PLACED! ${stake} 🤫 LOCKED IN`);
+    setBetSuccess(`BET PLACED! ${stake} AURA LOCKED IN`);
     setTimeout(() => setBetSuccess(null), 4000);
 
     if (!user) return;

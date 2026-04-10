@@ -52,7 +52,7 @@ export default function AdminUsersPage() {
     }
 
     async function handleReset(user: UserRow) {
-        if (!confirm(`Reset ${user.username}'s balance to 100 🤫? This cannot be undone.`)) return;
+        if (!confirm(`Reset ${user.username}'s balance to 100 AURA? This cannot be undone.`)) return;
         setProcessing(user.id);
         await supabase.from("users").update({
             aura_balance: 100,
